@@ -51,7 +51,7 @@ class load_allocation:
                 # sort the dictionary by the keys
                 dict_folder = dict(sorted(dict_folder.items()))
         if save_dict:
-            with open('data_processing/dict_folder.json', 'w') as f:
+            with open('municipality_profiles/dict_folder.json', 'w') as f:
                 json.dump(dict_folder, f)
         return dict_folder
                
@@ -231,7 +231,7 @@ class load_allocation:
 
 if __name__ == "__main__":
     la = load_allocation()
-    with open('data_processing/dict_folder.json') as f:
+    with open('municipality_profiles/dict_folder.json') as f:
         dict_folder = json.load(f)
     la.grid_dict = dict_folder
     keys = list(dict_folder.keys())
