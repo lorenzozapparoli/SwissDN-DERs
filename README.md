@@ -45,7 +45,7 @@ The results derived in step 1 and step 2 are combined together, and the demand p
 \text{profile} = \text{res\_percentage} \times \text{res\_profile} + \text{com\_percentage} \times \text{com\_profile}
 ```
 
-Here is an example of how to generate the demand profile for a grid. You can copy the code below or run the code in `exemple.ipynb`.
+Here is an example of how to generate the demand profile for a grid. You can copy the code below or run the code in `example.ipynb`.
 
 ```python
 import pickle
@@ -118,9 +118,9 @@ for n in tqdm.tqdm(range(len(grid_ids))):
 │   └── [Data and scripts for analyzing demand in square zones]
 ├── allocation.py
 │   └── [Script for percentage-based allocation processes]
-├── exemple.ipynb
+├── example.ipynb
 │   └── [Example Jupyter notebook demonstrating how to generate demand profiles for each node in a grid]
 ├── profile_assignment.py
-│   └── [Script for identifying typical days in a year and assigning profiles to nodes within the low-voltage network. Use `exemple.ipynb` for generating profiles for a single grid rather than a batch process]
+│   └── [Script for identifying typical days in a year and assigning profiles to nodes within the low-voltage network. Use `example.ipynb` for generating profiles for a single grid rather than a batch process]
 ```
 
