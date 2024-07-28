@@ -12,7 +12,7 @@ import pickle
 warnings.filterwarnings('ignore')
 
 def fill_all_municipalities():
-    with open('data_processing/dict_folder.json') as f:
+    with open('municipality_profiles/dict_folder.json') as f:
         folders = json.load(f)
     res_profile = pd.read_csv('Demand_calculator/residential_profiles.csv')
     com_profile = pd.read_csv('Demand_calculator/commercial_profiles.csv')
@@ -102,7 +102,7 @@ def get_daily_res_profile():
     residential_new.to_csv('Demand_calculator/residential_profiles_24h.csv')
 
 def assign_to_node_yearly(grid_id):
-    with open('data_processing/dict_folder.json') as f:
+    with open('municipality_profiles/dict_folder.json') as f:
         folders = json.load(f)
     # read the profile
     with open('municipality_profiles/commercial_profile_k-means.pkl', 'rb') as f:

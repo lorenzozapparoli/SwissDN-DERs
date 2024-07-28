@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2056" } },
+"features": [
+{ "type": "Feature", "properties": { "x": 2545650.0, "y": 1192650.0, "residential": 32.422062603235467, "commercial": 0.0, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 3.527520411232019e-06, "e_tot": 30901.078802392487, "el_dmd": 54.698849723472847, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2545650.0, 1192650.0 ] } },
+{ "type": "Feature", "properties": { "x": 2545750.0, "y": 1192550.0, "residential": 81.992984765207055, "commercial": 7.8292517291365069, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 9.7726593305845807e-06, "e_tot": 85608.495735920922, "el_dmd": 151.53795352119397, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2545750.0, 1192550.0 ] } },
+{ "type": "Feature", "properties": { "x": 2545750.0, "y": 1192650.0, "residential": 116.55865481328452, "commercial": 11.78115974479589, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 1.3963371823919153e-05, "e_tot": 122319.13717753178, "el_dmd": 216.52046990219154, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2545750.0, 1192650.0 ] } },
+{ "type": "Feature", "properties": { "x": 2545750.0, "y": 1192750.0, "residential": 77.616452898654615, "commercial": 0.0, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 8.4446700753736218e-06, "e_tot": 73975.30986027293, "el_dmd": 130.94573115619261, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2545750.0, 1192750.0 ] } },
+{ "type": "Feature", "properties": { "x": 2545850.0, "y": 1192650.0, "residential": 54.126087982260856, "commercial": 52.866090247217002, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 1.1640748991367194e-05, "e_tot": 101972.96116437661, "el_dmd": 180.50514398726799, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2545850.0, 1192650.0 ] } }
+]
+}
