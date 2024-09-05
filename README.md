@@ -25,6 +25,9 @@ There are a total of 2,148 municipalities, each with an `el_dmd.json` profile th
   - For \(a \leq 2\), the points are insufficient for Voronoi partitioning. In this case, we simply assign each node in the grid the load percentage of the nearest load point.
 - After the allocation, the residential percentage and commercial percentage of each node is saved in the original grid JSON file.
 
+The Voronoi partitioning and assignment are illustrated in the figure below. The color of each node represents its demand composition.
+
+<img src="Pictures/10_voronoi.png" alt="LV Voronoi" style="width:70%; height:auto;"/>
 ### Standard Profile Generation
 
 - We categorized demand profiles by demand source and their construction period. The table below shows the categories. Then we counted the number of each type of demand in each municipality and computed weighted average demand curves accordingly. It is worth mentioning that this demand is 8760 hours, while we need to calculate the profile of millions of nodes, which is a big data storage and computational challenge, so in the next step, we calculated representative 24-hour profiles from this yearly profile.
@@ -102,8 +105,18 @@ for n in tqdm.tqdm(range(len(grid_ids))):
 ### MV profiles
 To obtain the MV basic time-series load profile, we identified the time-series demand profile at the MV level and chose to use the demand profile of [Zurich](https://opendata.swiss/de/dataset/viertelstundenwerte-zur-stromabgabe-in-den-netzebenen-5-und-7-in-der-stadt-zurich-seit-2010). This dataset provides a clear separation between MV and LV demand, with a resolution of 15-minute intervals.
 
-For greater efficiency and accuracy, we normalized the data to a 0-1 scale and calculated the average 24-hour demand profile from 2015 to 2023. The processed data is stored in the folder MV_basic_monthly_24h_profile, and the resulting trend is illustrated in the figure below. ![MV Load Profile](Pictures/24h_profile.png)
+For greater efficiency and accuracy, we normalized the data to a 0-1 scale and calculated the average 24-hour demand profile from 2015 to 2023. The processed data is stored in the folder MV_basic_monthly_24h_profile, and the resulting trend is illustrated in the figure below. 
+<img src="Pictures/24h_profile.png" alt="MV Load Profile" style="width:70%; height:auto;"/>
 ### PV profiles
+The PV profiles for Swiss grid is generated based on the data provided by [Alina Walch et al.](https://www.sciencedirect.com/science/article/pii/S0306261919320914). We utilize the following files: rooftop_PV_CH_annual_by_building.csv, rooftop_PV_CH_EPV_W_by_building.csv, and rooftop_PV_CH_EPV_W_std_by_building.csv. A detailed description of this data is available at [data description](https://zenodo.org/records/3609833). This dataset provides a 24-hour PV generation profile for each building, with hourly intervals for each month of the year, along with associated uncertainties. We calculate an average 24-hour profile by using the 12 representative days in each month.
+
+To allocate the PV buildings, we apply Voronoi partitioning to each MV grid, using a buffer distance. The buffer distance influences how PV buildings are assigned to MV nodes. The impact of varying buffer distances is shown in the table below. The allocation results for each node are stored in the "PV_allocation_results" folder. In this folder, x_demand.pkl represents the PV demand profile allocated to grid "x," while x_std.pkl represents the uncertainty of that demand. The unit of the demand and uncertainty is W. 
+
+| Buffer distance (m) | MV_grids involved | Unmapped building (%)|Unmapped energy (%)|
+| ------- | ------- |------- |------- |
+| 5000    |  653    |0.922   |0.652|
+|8000	  |541	    |0.486	 |0.263|
+|10000|||
 ### Heat pump profiles
 ### EV profiles
 ### Directory Structures
