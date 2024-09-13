@@ -109,7 +109,7 @@ for n in tqdm.tqdm(range(len(grid_ids))):
 To obtain the MV basic time-series load profile, we identified the time-series demand profile at the MV level and chose to use the demand profile of [Zurich](https://opendata.swiss/de/dataset/viertelstundenwerte-zur-stromabgabe-in-den-netzebenen-5-und-7-in-der-stadt-zurich-seit-2010). This dataset provides a clear separation between MV and LV demand, with a resolution of 15-minute intervals.
 
 For greater efficiency and accuracy, we normalized the data to a 0-1 scale and calculated the average 24-hour demand profile from 2015 to 2023. The processed data is stored in the folder MV_basic_monthly_24h_profile, and the resulting trend is illustrated in the figure below. 
-<img src="Pictures/24h_profile.png" alt="MV Load Profile" style="width:80%; height:auto; display:block; margin:auto;"/>
+<div align=center><img src="Pictures/24h_profile.png" alt="MV Load Profile" style="width:80%; height:auto; display:block; margin:auto;"/></div>
 
 ### PV profiles
 The PV profiles for Swiss grid is generated based on the data provided by [Alina Walch et al.](https://www.sciencedirect.com/science/article/pii/S0306261919320914). We utilize the following files: rooftop_PV_CH_annual_by_building.csv, rooftop_PV_CH_EPV_W_by_building.csv, and rooftop_PV_CH_EPV_W_std_by_building.csv. A detailed description of this data is available at [data description](https://zenodo.org/records/3609833). This dataset provides a 24-hour PV generation profile for each building, with hourly intervals for each month of the year, along with associated uncertainties. 
@@ -124,7 +124,7 @@ To allocate the PV buildings, we apply Voronoi partitioning to each MV grid, usi
 |10000    |501      |0.232   |0.117|
 
 After the allocation, we found that the allocation of some of the grids are extremely imbalance and concentrated. We employ Z-score and HHI index to characterize the deviation and concentration extend of the allocation in a grid, and then re-distribute the PV injection of the node with Z-score bigger than 3 to other normal node to balance to allocation. For higher concentrated grid, we add new node step by step until $HHI<0.25$. The flow chart of this process is shown in the figure below. 
-<img src="Pictures/flowchart.png" alt="PV flowchart" style="width:40%; height:auto; display:block; margin:auto;"/>
+<div align=center><img src="Pictures/flowchart.png" alt="PV flowchart" style="width:35%; height:auto; display:block; margin:auto;"/></div>
 
 ### Heat pump profiles
 ### EV profiles
