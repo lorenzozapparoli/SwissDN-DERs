@@ -118,9 +118,12 @@ To allocate the PV buildings, we apply Voronoi partitioning to each MV grid, usi
 
 | Buffer distance (m) | MV_grids involved | Unmapped building (%)|Unmapped energy (%)|
 | ------- | ------- |------- |------- |
-| 5000    |  653    |0.922   |0.652|
+|3000     |747      |2.513   |1.933|
+|5000     |653      |0.922   |0.652|
 |8000	  |541	    |0.486	 |0.263|
-|10000|||
+|10000    |501      |0.232   |0.117|
+After the allocation, we found that the allocation of some of the grids are extremely imbalance and concentrated. We employ Z-score and HHI index to characterize the deviation and concentration extend of the allocation in a grid, and then re-distribute the PV injection of the node with Z-score bigger than 3 to other normal node to balance to allocation. For higher concentrated grid, we add new node step by step until $HHI<0.25$. The flow chart of this process is shown in the figure below. 
+<img src="Pictures/flowchart.png" alt="PV flowchart" style="width:40%; height:auto; display:block; margin:auto;"/>
 ### Heat pump profiles
 ### EV profiles
 ### Directory Structures

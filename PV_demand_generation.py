@@ -7,7 +7,8 @@ import sys
 import warnings
 warnings.filterwarnings("ignore")
 import tqdm
-buffer_distance = '8000'
+buffer_distance = '5000'
+mode = 'full' # 'avg' or 'full'
 PV_building = pd.read_csv('PV_data/PV_Building_processed_'+buffer_distance+'.csv')
 PV_building['MV_osmid'] = PV_building['MV_osmid'].astype(int)
 PV_time_series = pd.read_csv('PV_data/rooftop_PV_CH_EPV_W_by_building.csv')
@@ -47,6 +48,17 @@ def calculate_unmapped_building(df=PV_building):
     unmapped_buildings = df[df['MV_grid'] == '-1']
     unmapped_rate = len(unmapped_buildings)/len(df)
     return unmapped_rate, len(mapped_buildings)
+
+def fill_missing_hour(df):
+    df.set_index('SB_UUID', inplace=True)
+    df.columns = pd.to_datetime(df.columns)
+    unique_days = df.columns.normalize().unique()
+    full_columns = pd.DatetimeIndex([])  # Start with an empty DatetimeIndex
+    for day in unique_days:
+        full_columns = full_columns.append(pd.date_range(day, periods=24, freq='H'))
+    df_full = df.reindex(columns=full_columns, fill_value=0)
+    df_full.reset_index(inplace=True)
+    return df_full
     
 
 def allocation(PV_building, df_time_series_avg, df_std_avg, id, buffer_distance):
@@ -75,19 +87,24 @@ def allocation(PV_building, df_time_series_avg, df_std_avg, id, buffer_distance)
     data2.to_pickle('PV_allocation_results/'+buffer_distance+'/' + str(id) + '/' + str(id) + '_demand.pkl')
     data3.to_pickle('PV_allocation_results/'+buffer_distance+'/' + str(id) + '/' + str(id) + '_std.pkl')
     
-
-PV_time_series_avg = calculate_daily_average(PV_time_series)
-PV_std_avg = calculate_daily_average(PV_std)
-df_time_series_avg = mapping(PV_building, PV_time_series_avg)
-df_std_avg = mapping(PV_building, PV_std_avg)
+if mode == 'avg':
+    PV_time_series = calculate_daily_average(PV_time_series)
+    PV_std = calculate_daily_average(PV_std)
+    df_time_series = mapping(PV_building, PV_time_series)
+    df_std = mapping(PV_building, PV_std)
+elif mode == 'full':
+    PV_time_series = fill_missing_hour(PV_time_series)
+    PV_std = fill_missing_hour(PV_std)
+    df_time_series = mapping(PV_building, PV_time_series)
+    df_std = mapping(PV_building, PV_std)
 
 MV_grids_ids = PV_building['MV_grid'].unique()
 MV_grids_ids = MV_grids_ids[MV_grids_ids != '-1']
 # rearrange the order of MV grid ids to start with the smallest id
 MV_grids_ids = np.sort(MV_grids_ids)
 for id in tqdm.tqdm(MV_grids_ids):
-    allocation(PV_building, df_time_series_avg, df_std_avg, id, buffer_distance)
-unmapped_rate = calculate_unmapped(df_time_series_avg)
+    allocation(PV_building, df_time_series, df_std, id, buffer_distance)
+unmapped_rate = calculate_unmapped(df_time_series)
 print('The energy unmapped rate is: ' + str(unmapped_rate))
 unmapped_rate_building, mapped_number = calculate_unmapped_building()
 print('The building unmapped rate is: ' + str(unmapped_rate_building)+', and the number of mapped buildings is: '+str(mapped_number))

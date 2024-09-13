@@ -38,7 +38,7 @@ EPV_kWh_m2roof_a: annual PV potential per m2 of suitable roof area
 
 class PV_demand_generation():
     def __init__(self):
-        self.BUFFER_DISTANCE = 10000
+        self.BUFFER_DISTANCE = 3000
         self.building_data_path = 'PV_data/rooftop_PV_CH_annual_by_building.csv'
         self.PV_time_series_path = 'PV_data/rooftop_PV_CH_EPV_W_by_building.csv'
         self.LV_id = dict()
@@ -48,7 +48,6 @@ class PV_demand_generation():
         self.id = str
         self.save_path = 'PV_data/'
         
-
     def PV_data_preprocessing(self):
         PV_data = pd.read_csv(self.building_data_path)
         PV_data['geometry'] = [Point(xy) for xy in zip(PV_data.XCOORD, PV_data.YCOORD)]
@@ -60,7 +59,6 @@ class PV_demand_generation():
         # save the processed PV data in json format
         PV_data.to_csv('PV_data/PV_Building_processed.csv', index=False)
         return PV_data
-
 
     def load_grid_data(self):
         # load mv and lv node and edge data
@@ -168,9 +166,9 @@ if __name__ == "__main__":
         PV_building = PV_demand_allocation.PV_data_preprocessing()
         print('Transform the PV data to the correct coordinate system.')
 
-    for id in PV_demand_allocation.MV_id[3:600]:
+    for id in PV_demand_allocation.MV_id[822:]:
         PV_demand_allocation.id = id
-        PV_partly = PV_demand_allocation.PV_allocation(PV_building, show_plot=True)
+        PV_partly = PV_demand_allocation.PV_allocation(PV_building, show_plot=False)
         PV_building = pd.merge(PV_building, PV_partly, how='left', on='SB_UUID',suffixes=('', '_updated'))
         PV_building['MV_grid'] = PV_building['MV_grid_updated'].combine_first(PV_building['MV_grid'])
         PV_building['MV_osmid'] = PV_building['MV_osmid_updated'].combine_first(PV_building['MV_osmid'])
