@@ -112,7 +112,7 @@ For greater efficiency and accuracy, we normalized the data to a 0-1 scale and c
 <img src="Pictures/24h_profile.png" alt="MV Load Profile" style="width:80%; height:auto; display:block; margin:auto;"/>
 
 ### PV profiles
-The PV profiles for Swiss grid is generated based on the data provided by [Alina Walch et al.](https://www.sciencedirect.com/science/article/pii/S0306261919320914). We utilize the following files: rooftop_PV_CH_annual_by_building.csv, rooftop_PV_CH_EPV_W_by_building.csv, and rooftop_PV_CH_EPV_W_std_by_building.csv. A detailed description of this data is available at [data description](https://zenodo.org/records/3609833). This dataset provides a 24-hour PV generation profile for each building, with hourly intervals for each month of the year, along with associated uncertainties. We calculate an average 24-hour profile by using the 12 representative days in each month.
+The PV profiles for Swiss grid is generated based on the data provided by [Alina Walch et al.](https://www.sciencedirect.com/science/article/pii/S0306261919320914). We utilize the following files: rooftop_PV_CH_annual_by_building.csv, rooftop_PV_CH_EPV_W_by_building.csv, and rooftop_PV_CH_EPV_W_std_by_building.csv. A detailed description of this data is available at [data description](https://zenodo.org/records/3609833). This dataset provides a 24-hour PV generation profile for each building, with hourly intervals for each month of the year, along with associated uncertainties. 
 
 To allocate the PV buildings, we apply Voronoi partitioning to each MV grid, using a buffer distance. The buffer distance influences how PV buildings are assigned to MV nodes. The impact of varying buffer distances is shown in the table below. The allocation results for each node are stored in the "PV_allocation_results" folder. In this folder, x_demand.pkl represents the PV demand profile allocated to grid "x," while x_std.pkl represents the uncertainty of that demand. The unit of the demand and uncertainty is W. 
 
@@ -122,8 +122,10 @@ To allocate the PV buildings, we apply Voronoi partitioning to each MV grid, usi
 |5000     |653      |0.922   |0.652|
 |8000	  |541	    |0.486	 |0.263|
 |10000    |501      |0.232   |0.117|
+
 After the allocation, we found that the allocation of some of the grids are extremely imbalance and concentrated. We employ Z-score and HHI index to characterize the deviation and concentration extend of the allocation in a grid, and then re-distribute the PV injection of the node with Z-score bigger than 3 to other normal node to balance to allocation. For higher concentrated grid, we add new node step by step until $HHI<0.25$. The flow chart of this process is shown in the figure below. 
 <img src="Pictures/flowchart.png" alt="PV flowchart" style="width:40%; height:auto; display:block; margin:auto;"/>
+
 ### Heat pump profiles
 ### EV profiles
 ### Directory Structures
@@ -146,14 +148,19 @@ After the allocation, we found that the allocation of some of the grids are extr
 │         └── [CSV file with average daily residential profiles over a year]
 ├── Square_zones_dmd
 │   └── [Data and scripts for analyzing demand in square zones]
-├── allocation.py
+├── LV_basicload_allocation.py
 │   └── [Script for percentage-based allocation processes]
 ├── example.ipynb
 │   └── [Example Jupyter notebook demonstrating how to generate demand profiles for each node in a grid]
 ├── profile_assignment.py
-│   └── [Script for identifying typical days in a year and assigning profiles to nodes within the low-voltage network. Use `example.
+│   └── [Script for identifying typical days in a year and assigning profiles to nodes within the low-voltage network.]
 ├── MV_basic_monthly_24h_profile
 │
-ipynb` for generating profiles for a single grid rather than a batch process]
+├──`example.ipynb`
+│    └── [Use to generate profiles for a single grid rather than a batch process]
+├──`PV_allocation_MV_voronoi.py`
+│    └──[Use to allocation PV buildings to nodes in MV grid]
+├──`PV_demand_generation.py`
+│    └──[Use to assign a demand profile and a std profile to nodes in each MV grid]
 ```
 

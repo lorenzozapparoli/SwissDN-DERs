@@ -235,13 +235,13 @@ if __name__ == "__main__":
         dict_folder = json.load(f)
     la.grid_dict = dict_folder
     keys = list(dict_folder.keys())
-    for key in keys[185:]:    
+    for key in keys[1:2]:    
         #TODO check 797:798, 854:855,1939:1940 (6744), 1989:1990(708), 1993:1994(715)
         len_dict = len(dict_folder)
         print("Processing grid "+key+" ("+str(list(dict_folder.keys()).index(key)+1)+"/"+str(len_dict)+")")
         la.grids_name = key
         la.save_id()
-        save_plot = False
+        save_plot = True
         la.save_allocation(save_plot=save_plot)
     
 
