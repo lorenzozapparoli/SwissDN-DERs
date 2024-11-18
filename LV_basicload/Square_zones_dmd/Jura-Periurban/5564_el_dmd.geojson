@@ -1,0 +1,12 @@
+{
+"type": "FeatureCollection",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2056" } },
+"features": [
+{ "type": "Feature", "properties": { "x": 2535450.0, "y": 1186750.0, "residential": 24.383534685077912, "commercial": 0.0, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 2.6529285737364776e-06, "e_tot": 23239.654305931541, "el_dmd": 41.137151444925863, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535450.0, 1186750.0 ] } },
+{ "type": "Feature", "properties": { "x": 2535650.0, "y": 1186650.0, "residential": 19.292467003578132, "commercial": 7.8292517291365069, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 2.950842998119353e-06, "e_tot": 25849.384663525532, "el_dmd": 45.756706948527466, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535650.0, 1186650.0 ] } },
+{ "type": "Feature", "properties": { "x": 2535650.0, "y": 1186750.0, "residential": 79.93869429723344, "commercial": 0.0, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 8.6973299395389993e-06, "e_tot": 76188.610270361634, "el_dmd": 134.86355510332837, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535650.0, 1186750.0 ] } },
+{ "type": "Feature", "properties": { "x": 2535750.0, "y": 1186650.0, "residential": 34.833620978682731, "commercial": 0.0, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 3.7898979624806818e-06, "e_tot": 33199.506151330774, "el_dmd": 58.767359207036954, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535750.0, 1186650.0 ] } },
+{ "type": "Feature", "properties": { "x": 2535750.0, "y": 1186750.0, "residential": 62.745176250063125, "commercial": 32.062649938368558, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 1.0315091489301368e-05, "e_tot": 90360.201446279985, "el_dmd": 159.94907852570273, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535750.0, 1186750.0 ] } },
+{ "type": "Feature", "properties": { "x": 2535850.0, "y": 1186850.0, "residential": 46.266194017840157, "commercial": 17.149789501918065, "industrial": null, "canton_nr": 22.0, "canton_code": "VD", "total": 6.8996590069496941e-06, "e_tot": 60441.012900879316, "el_dmd": 106.98829975941531, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2535850.0, 1186850.0 ] } }
+]
+}

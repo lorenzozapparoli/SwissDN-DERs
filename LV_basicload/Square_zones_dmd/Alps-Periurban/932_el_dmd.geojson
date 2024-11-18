@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2056" } },
+"features": [
+{ "type": "Feature", "properties": { "x": 2619950.0, "y": 1181050.0, "residential": 14.120097563758952, "commercial": 37.099224781207838, "industrial": null, "canton_nr": 2.0, "canton_code": "BE", "total": 5.5726622711323871e-06, "e_tot": 48816.521495119712, "el_dmd": 79.447342468902661, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2619950.0, 1181050.0 ] } },
+{ "type": "Feature", "properties": { "x": 2620550.0, "y": 1180850.0, "residential": 35.243763519142355, "commercial": 0.0, "industrial": null, "canton_nr": 2.0, "canton_code": "BE", "total": 3.8345214708826884e-06, "e_tot": 33590.408084932351, "el_dmd": 54.667325181303823, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2620550.0, 1180850.0 ] } },
+{ "type": "Feature", "properties": { "x": 2623850.0, "y": 1180950.0, "residential": 12.538646636617949, "commercial": 52.309102186084786, "industrial": null, "canton_nr": 2.0, "canton_code": "BE", "total": 7.0554350719100591e-06, "e_tot": 61805.611229932118, "el_dmd": 100.58667458260345, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2623850.0, 1180950.0 ] } },
+{ "type": "Feature", "properties": { "x": 2624050.0, "y": 1181150.0, "residential": 0.0, "commercial": 55.689074942724126, "industrial": null, "canton_nr": 2.0, "canton_code": "BE", "total": 6.0589713537683848e-06, "e_tot": 53076.58905901105, "el_dmd": 86.38046749140095, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2624050.0, 1181150.0 ] } },
+{ "type": "Feature", "properties": { "x": 2629650.0, "y": 1181250.0, "residential": 10.844234928966875, "commercial": 30.902608060702399, "industrial": null, "canton_nr": 2.0, "canton_code": "BE", "total": 4.5420565172760182e-06, "e_tot": 39788.41509133792, "el_dmd": 64.754385262219046, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2629650.0, 1181250.0 ] } }
+]
+}
