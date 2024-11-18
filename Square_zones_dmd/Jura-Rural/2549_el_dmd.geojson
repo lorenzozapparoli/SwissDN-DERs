@@ -1,8 +1,0 @@
-{
-"type": "FeatureCollection",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2056" } },
-"features": [
-{ "type": "Feature", "properties": { "x": 2611650.0, "y": 1233250.0, "residential": 30.156283771972355, "commercial": 0.0, "industrial": null, "canton_nr": 11.0, "canton_code": "SO", "total": 3.2810036743905927e-06, "e_tot": 28741.59218766159, "el_dmd": 44.668590247669435, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2611650.0, 1233250.0 ] } },
-{ "type": "Feature", "properties": { "x": 2611950.0, "y": 1233750.0, "residential": 23.224839442295128, "commercial": 0.0, "industrial": null, "canton_nr": 11.0, "canton_code": "SO", "total": 2.5268625313217103e-06, "e_tot": 22135.315774378181, "el_dmd": 34.401481444473774, "cluster_area": 0 }, "geometry": { "type": "Point", "coordinates": [ 2611950.0, 1233750.0 ] } }
-]
-}
