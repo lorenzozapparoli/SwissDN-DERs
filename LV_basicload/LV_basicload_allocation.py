@@ -54,9 +54,11 @@ class load_allocation:
         self.grid_dict = dict
         self.buildings = gpd.GeoDataFrame()
         self.path = os.path.dirname(os.path.abspath(__file__))
-        
+        self.input_path = os.path.join(self.path, 'LV_basicload_input')
+        self.output_path = os.path.join(self.path, 'LV_basicload_output')
+                
     def create_dict(self,save_dict=False):
-        path = self.path+'/Square_zones_dmd/'
+        path = self.input_path+'/Square_zones_dmd/'
         list_folder = os.listdir(path)
         dict_folder = {}
         for folder in list_folder:
@@ -68,7 +70,7 @@ class load_allocation:
                 # sort the dictionary by the keys
                 dict_folder = dict(sorted(dict_folder.items()))
         if save_dict:
-            with open(self.path+'/municipality_profiles/dict_folder.json', 'w') as f:
+            with open(self.output_path+'/municipality_profiles/dict_folder.json', 'w') as f:
                 json.dump(dict_folder, f)
         return dict_folder
                
@@ -79,7 +81,7 @@ class load_allocation:
         return grid_ids
         
     def import_demand(self):
-        el_dmd_name = self.path+'/Square_zones_dmd/'+self.grid_dict[self.grids_name]+'/'+self.grids_name+'_el_dmd.geojson'
+        el_dmd_name = self.input_path+'/Square_zones_dmd/'+self.grid_dict[self.grids_name]+'/'+self.grids_name+'_el_dmd.geojson'
         el_dmd = gpd.read_file(el_dmd_name)
         el_dmd['residential_percentage'] = el_dmd['residential']/(el_dmd['residential']+el_dmd['commercial'])
         el_dmd['commercial_percentage'] = el_dmd['commercial']/(el_dmd['residential']+el_dmd['commercial'])
@@ -178,14 +180,14 @@ class load_allocation:
         cbar.ax.tick_params(labelsize=9)
         plt.axis('off')
         # create the folder if it does not exist "results"
-        if not os.path.exists(self.path+'/results'):
-            os.makedirs(self.path+'/results')
+        if not os.path.exists(self.output_path+'/results'):
+            os.makedirs(self.output_path+'/results')
         if save_plot:
-            plt.savefig(self.path+'/results/'+self.grids_name+'_voronoi.png', dpi=500, bbox_inches='tight')
+            plt.savefig(self.output_path+'/results/'+self.grids_name+'_voronoi.png', dpi=500, bbox_inches='tight')
             print("The voronoi diagram is saved in the results folder")
         return node_total
     
-    def allocation_for_2grids(self):
+    def allocation_for_2nodes(self):
         el_dmd = self.import_demand()
         node_total, edge_total = self.concat_all_grids()
         for j in range(len(node_total)):
@@ -204,7 +206,7 @@ class load_allocation:
         if len(self.grid_ids) > 2:
             node_total = self.voronoi(save_plot=save_plot)
         else:
-            node_total = self.allocation_for_2grids()
+            node_total = self.allocation_for_2nodes()
         grid_ids = self.grid_ids
         for iter, i in enumerate(grid_ids):
             n = len(grid_ids)
@@ -217,8 +219,6 @@ class load_allocation:
                 index_node = node_total[node_total['x']==node.loc[j,'x']][node_total['y']==node.loc[j,'y']].index
                 node.loc[j,'res_percentage'] = node_total.loc[index_node,'res_percentage'].values[0]
                 node.loc[j,'com_percentage'] = node_total.loc[index_node,'com_percentage'].values[0]
-                #node.loc[j,'res_percentage'] = node_total[node_total['geometry']==node.loc[j,'geometry']]['res_percentage'].values[0]
-                #node.loc[j,'com_percentage'] = node_total[node_total['geometry']==node.loc[j,'geometry']]['com_percentage'].values[0]
             node.to_file('LV/'+self.grid_dict[self.grids_name]+'/'+node_id, driver='GeoJSON')
             print("Successfully saved the allocation for grid "+i+" ("+str(iter+1)+"/"+str(n)+")")
             
@@ -248,12 +248,11 @@ class load_allocation:
 
 if __name__ == "__main__":
     la = load_allocation()
-    with open(la.path+'/municipality_profiles/dict_folder.json') as f:
+    with open(la.output_path+'/municipality_profiles/dict_folder.json') as f:
         dict_folder = json.load(f)
     la.grid_dict = dict_folder
     keys = list(dict_folder.keys())
     for key in keys[0:1]:    
-        #TODO check 797:798, 854:855,1939:1940 (6744), 1989:1990(708), 1993:1994(715)
         len_dict = len(dict_folder)
         print("Processing grid "+key+" ("+str(list(dict_folder.keys()).index(key)+1)+"/"+str(len_dict)+")")
         la.grids_name = key
