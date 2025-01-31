@@ -1,21 +1,11 @@
 # This is the script to do voronoi partitioning of all the MV trafos in Switzerland
-import numpy as np
 import pandas as pd
 import os
-import pandapower as pp
 import geopandas as gpd
 import json
-from scipy.spatial import ConvexHull
-from shapely.geometry import Point
-from shapely.geometry import Polygon
-from shapely.affinity import scale
-from scipy.spatial import Voronoi, voronoi_plot_2d
-from geovoronoi import voronoi_regions_from_coords, points_to_coords
+from geovoronoi import voronoi_regions_from_coords
 import tqdm
-import shutil
 import warnings
-from shapely import wkt
-import seaborn as sns
 import matplotlib.pyplot as plt
 warnings.filterwarnings('ignore')
 
