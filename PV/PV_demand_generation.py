@@ -89,7 +89,7 @@ def area_calculation(id, PV_generation_data, irradiance_data):
     return P_data
     
 
-def allocation(PV_building, df_time_series_avg, df_std_avg, id, buffer_distance):
+def allocation(PV_building, df_time_series_avg, df_std_avg, id):
     pv_part = PV_building[PV_building['MV_grid'] == id]
     pv_time_series_part = df_time_series_avg[df_time_series_avg['MV_grid'] == id]
     pv_std_part = df_std_avg[df_std_avg['MV_grid'] == id]
