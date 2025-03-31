@@ -1,4 +1,5 @@
 import pandas as pd
+from mpi4py import MPI
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -58,11 +59,11 @@ class load_allocation:
         self.output_path = os.path.join(self.path, 'LV_basicload_output')
                 
     def create_dict(self,save_dict=False):
-        path = self.input_path+'/Square_zones_dmd/'
+        path = self.input_path+'\\Square_zones_dmd\\'
         list_folder = os.listdir(path)
         dict_folder = {}
         for folder in list_folder:
-            path_folder = path+folder+'/'
+            path_folder = path+folder+'\\'
             list_files = os.listdir(path_folder)
             for file in list_files:
                 file_name = file.split('_')[0]
@@ -70,45 +71,45 @@ class load_allocation:
                 # sort the dictionary by the keys
                 dict_folder = dict(sorted(dict_folder.items()))
         if save_dict:
-            with open(self.output_path+'/municipality_profiles/dict_folder.json', 'w') as f:
+            with open(self.output_path+'\\municipality_profiles\\dict_folder.json', 'w') as f:
                 json.dump(dict_folder, f)
         return dict_folder
-               
+
     def save_id(self):
-        path = 'LV/'+self.grid_dict[self.grids_name]+'/'
+        path = 'LV\\'+self.grid_dict[self.grids_name]+'\\'
         grid_ids = list(set([str(f.split('.')[0][:-6]) for f in os.listdir(path) if f.startswith(self.grids_name+'-')]))
         self.grid_ids = grid_ids
         return grid_ids
-        
+
     def import_demand(self):
-        el_dmd_name = self.input_path+'/Square_zones_dmd/'+self.grid_dict[self.grids_name]+'/'+self.grids_name+'_el_dmd.geojson'
+        el_dmd_name = self.input_path+'\\Square_zones_dmd\\'+self.grid_dict[self.grids_name]+'\\'+self.grids_name+'_el_dmd.geojson'
         el_dmd = gpd.read_file(el_dmd_name)
         el_dmd['residential_percentage'] = el_dmd['residential']/(el_dmd['residential']+el_dmd['commercial'])
         el_dmd['commercial_percentage'] = el_dmd['commercial']/(el_dmd['residential']+el_dmd['commercial'])
         el_dmd['residential_percentage'] = el_dmd['residential_percentage'].fillna(0)
         el_dmd['commercial_percentage'] = el_dmd['commercial_percentage'].fillna(0)
         return el_dmd
-    
+
     def concat_all_grids(self):
         grid_ids = self.grid_ids
         node_total = gpd.GeoDataFrame()
         edge_total = gpd.GeoDataFrame()
         # add timebar to show the progress using tqdm
-        print("Concatenating all the nodes and edges of the grids...")
-        for n in tqdm.tqdm(range(len(grid_ids))):
+        # print("Concatenating all the nodes and edges of the grids...")
+        for n in range(len(grid_ids)):
             i = grid_ids[n]
             node_id = i+"_nodes"
             edge_id = i+"_edges"
             try:
-                edge = gpd.read_file('LV/'+self.grid_dict[self.grids_name]+'/'+edge_id)
+                edge = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+edge_id)
                 edge_total = pd.concat([edge_total, edge], ignore_index=True)
             except:
                 print("Error in reading the edge file "+edge_id)
-            node = gpd.read_file('LV/'+self.grid_dict[self.grids_name]+'/'+node_id)
+            node = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+node_id)
             node_total = pd.concat([node_total, node], ignore_index=True)
-            
+
         return node_total, edge_total
-    
+
     def voronoi(self, save_plot=False):
         el_dmd = self.import_demand()
         node_total, edge_total = self.concat_all_grids()
@@ -138,13 +139,13 @@ class load_allocation:
         edge_total.plot(ax=ax, color='black', linewidth=0.5)
         voronoi_plot_2d(vor, ax=ax, show_vertices=False, point_size=1.5, line_colors='grey', line_width=0.3,
                         line_alpha=0.3,show_points=False)
-        
+
         # assign the residential and commercial percentages to the nodes according to the voronoi diagram
-        print("Assigning the residential and commercial percentages to the nodes...")
-        for i in tqdm.tqdm(range(len(el_dmd))):
+        # print("Assigning the residential and commercial percentages to the nodes...")
+        for i in range(len(el_dmd)):
             el = el_dmd.iloc[i]
             cor = coords[i]
-            res_percentage = el['residential_percentage']   
+            res_percentage = el['residential_percentage']
             com_percentage = el['commercial_percentage']
             region = regions[point_region[i]]
             color =  sns.color_palette("coolwarm", as_cmap=True)(res_percentage)
@@ -180,13 +181,13 @@ class load_allocation:
         cbar.ax.tick_params(labelsize=9)
         plt.axis('off')
         # create the folder if it does not exist "results"
-        if not os.path.exists(self.output_path+'/results'):
-            os.makedirs(self.output_path+'/results')
+        if not os.path.exists(self.output_path+'\\results'):
+            os.makedirs(self.output_path+'\\results')
         if save_plot:
-            plt.savefig(self.output_path+'/results/'+self.grids_name+'_voronoi.png', dpi=500, bbox_inches='tight')
-            print("The voronoi diagram is saved in the results folder")
+            plt.savefig(self.output_path+'\\results\\'+self.grids_name+'_voronoi.png', dpi=500, bbox_inches='tight')
+            # print("The voronoi diagram is saved in the results folder")
         return node_total
-    
+
     def allocation_for_2nodes(self):
         el_dmd = self.import_demand()
         node_total, edge_total = self.concat_all_grids()
@@ -201,7 +202,7 @@ class load_allocation:
             node_total.loc[j, 'res_percentage'] = el_dmd.iloc[min_index]['residential_percentage']
             node_total.loc[j, 'com_percentage'] = el_dmd.iloc[min_index]['commercial_percentage']
         return node_total
-    
+
     def save_allocation(self,save_plot=False):
         if len(self.grid_ids) > 2:
             node_total = self.voronoi(save_plot=save_plot)
@@ -211,7 +212,7 @@ class load_allocation:
         for iter, i in enumerate(grid_ids):
             n = len(grid_ids)
             node_id = i+"_nodes"
-            node = gpd.read_file('LV/'+self.grid_dict[self.grids_name]+'/'+node_id)
+            node = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+node_id)
             node['res_percentage'] = -1
             node['com_percentage'] = -1
             for j in range(len(node)):
@@ -219,12 +220,12 @@ class load_allocation:
                 index_node = node_total[node_total['x']==node.loc[j,'x']][node_total['y']==node.loc[j,'y']].index
                 node.loc[j,'res_percentage'] = node_total.loc[index_node,'res_percentage'].values[0]
                 node.loc[j,'com_percentage'] = node_total.loc[index_node,'com_percentage'].values[0]
-            node.to_file('LV/'+self.grid_dict[self.grids_name]+'/'+node_id, driver='GeoJSON')
-            print("Successfully saved the allocation for grid "+i+" ("+str(iter+1)+"/"+str(n)+")")
-            
+            node.to_file('LV\\/'+self.grid_dict[self.grids_name]+'\\'+node_id, driver='GeoJSON')
+            # print("Successfully saved the allocation for grid "+i+" ("+str(iter+1)+"\\"+str(n)+")")
+
 
     def transform_from_pkl(self):
-        path = 'Synthetic_networks/Demand_calculator/municipality_normalized_profiles.pkl'
+        path = 'Synthetic_networks\\Demand_calculator\\municipality_normalized_profiles.pkl'
         profiles = pd.read_pickle(path)
         keys = profiles.keys()
         commercial = pd.DataFrame()
@@ -243,22 +244,47 @@ class load_allocation:
                 error.append(key)
                 print(key)
                 continue
-        commercial.to_csv('Synthetic_networks/Demand_calculator/commercial_profiles.csv', index=False)
-        residential.to_csv('Synthetic_networks/Demand_calculator/residential_profiles.csv', index=False)
+        commercial.to_csv('Synthetic_networks\\Demand_calculator\\commercial_profiles.csv', index=False)
+        residential.to_csv('Synthetic_networks\\Demand_calculator\\residential_profiles.csv', index=False)
+
+# if __name__ == "__main__":
+#     la = load_allocation()
+#     with open(la.output_path+'\\municipality_profiles\\dict_folder.json') as f:
+#         dict_folder = json.load(f)
+#     la.grid_dict = dict_folder
+#     keys = list(dict_folder.keys())
+#     # print(len(keys))
+#     for key in keys[0:-1]:
+#         len_dict = len(dict_folder)
+#         print("Processing grid "+key+" ("+str(list(dict_folder.keys()).index(key)+1)+"\\"+str(len_dict)+")")
+#         la.grids_name = key
+#         la.save_id()
+#         save_plot = True
+#         la.save_allocation(save_plot=save_plot)
 
 if __name__ == "__main__":
     la = load_allocation()
-    with open(la.output_path+'/municipality_profiles/dict_folder.json') as f:
+    with open(la.output_path+'\\municipality_profiles\\dict_folder.json') as f:
         dict_folder = json.load(f)
     la.grid_dict = dict_folder
     keys = list(dict_folder.keys())
-    for key in keys[0:1]:    
+
+    # Initialize MPI
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    # Distribute keys among processes
+    keys_per_process = len(keys) // size
+    start = rank * keys_per_process
+    end = (rank + 1) * keys_per_process if rank != size - 1 else len(keys)
+
+    for key in keys[start:end]:
         len_dict = len(dict_folder)
-        print("Processing grid "+key+" ("+str(list(dict_folder.keys()).index(key)+1)+"/"+str(len_dict)+")")
+        print(f"Processing grid {key} ({keys.index(key)+1}\\{len_dict}) on rank {rank}")
         la.grids_name = key
         la.save_id()
         save_plot = True
         la.save_allocation(save_plot=save_plot)
-    
 
-        
+    # Finalize MPI
+    MPI.Finalize()

@@ -1,0 +1,5 @@
+Run the script in this order
+PV_building_split.py
+PV_allocation_LV.py
+PV_allocation_MV.py
+Final_results_generator.py

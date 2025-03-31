@@ -71,7 +71,7 @@ warnings.filterwarnings('ignore')
 
 grid_id = '2'
 # read folder dictionary
-with open('data_processing/dict_folder.json') as f:
+with open('PV/data_processing/dict_folder.json') as f:
     folders = json.load(f)
 # read the profile
 with open('municipality_profiles/commercial_profile_k-means.pkl', 'rb') as f:

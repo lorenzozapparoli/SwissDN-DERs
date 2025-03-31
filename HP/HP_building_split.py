@@ -5,14 +5,16 @@ import pandas as pd
 import geopandas as gpd
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
+from shapely.geometry import MultiPoint
+from mpi4py import MPI
 
 # Constants and paths
-BUFFER_DISTANCE = 10
+BUFFER_DISTANCE = 100
 script_path = os.path.dirname(os.path.abspath(__file__))
 data_path = os.path.join(script_path, 'HP_input','Buildings_data')
 building_split_path = os.path.join(data_path, 'Building_split')
-grid_path = 'LV/'
-dict_path = 'data_processing/'
+grid_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\LV'
+dict_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\data_processing'
 
 # Ensure output directory exists
 os.makedirs(building_split_path, exist_ok=True)
@@ -45,21 +47,32 @@ municipality_names['municipality'] = municipality_names['municipality'].str.repl
 def create_convex_hull(lv_node_gpd):
     """
     Create a convex hull polygon around grid nodes, with a buffer.
-    
+
     Args:
         lv_node_gpd (GeoDataFrame): Grid node geometries.
-    
+
     Returns:
         buffered_polygon (Polygon): Buffered convex hull polygon.
         buffered_hull_points (ndarray): Coordinates of the buffered polygon exterior.
     """
-    hull = ConvexHull([list(point) for point in lv_node_gpd.geometry.apply(lambda x: (x.x, x.y))])
-    hull_points = [lv_node_gpd.geometry.apply(lambda x: (x.x, x.y))[i] for i in hull.vertices]
+    points = [point for point in lv_node_gpd.geometry]
+
+    if len(points) < 3:
+        # If there are fewer than 3 points, create a buffer around each point and combine them
+        buffered_points = [point.buffer(BUFFER_DISTANCE) for point in points]
+        combined_polygon = buffered_points[0]
+        for buffered_point in buffered_points[1:]:
+            combined_polygon = combined_polygon.union(buffered_point)
+        buffered_hull_points = np.array(combined_polygon.exterior.coords)
+        return combined_polygon, buffered_hull_points
+
+    hull = ConvexHull([(point.x, point.y) for point in points])
+    hull_points = [points[i] for i in hull.vertices]
     polygon = Polygon(hull_points)
     buffered_polygon = polygon.buffer(BUFFER_DISTANCE)
     buffered_hull_points = np.array(buffered_polygon.exterior.coords)
-    return buffered_polygon, buffered_hull_points
 
+    return buffered_polygon, buffered_hull_points
 def find_building_within_hull(building, hull):
     """
     Find buildings within a convex hull.
@@ -75,15 +88,29 @@ def find_building_within_hull(building, hull):
     points_within_hull = points_within_hull[points_within_hull.geometry.apply(hull.contains)]
     return points_within_hull
 
-# Main processing loop
-for idx, key in enumerate(keys):
+# MPI initialization
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+# Scatter keys to all processes
+if rank == 0:
+    keys_split = np.array_split(keys, size)
+else:
+    keys_split = None
+
+keys_split = comm.scatter(keys_split, root=0)
+
+# Each process processes its assigned keys
+partial_results = pd.DataFrame()
+for idx, key in enumerate(keys_split):
     path = os.path.join(grid_path, dict_folder[key])
-    
+
     # Retrieve grid IDs for the current key
     grid_ids = list(set([
         str(f.split('.')[0][:-6]) for f in os.listdir(path) if f.startswith(key + '-')
     ]))
-    
+
     # Aggregate grid nodes
     node_total = gpd.GeoDataFrame()
     for grid_id in grid_ids:
@@ -95,12 +122,14 @@ for idx, key in enumerate(keys):
     # Create convex hull and find buildings within
     buffered_polygon, _ = create_convex_hull(node_total)
     buildings_section = find_building_within_hull(buildings_data, buffered_polygon)
-    
+
     # Update flag and save results
-    flag[buildings_section.index] = 1
     if buildings_section.empty:
         print(f"No buildings found in {key}")
         continue
     output_file = os.path.join(building_split_path, f"{key}_buildings.csv")
     buildings_section.to_csv(output_file, index=False)
-    print(f"FINISH: ({idx + 1}/{len_dict})")
+    print(f"FINISH: ({idx + 1}/{len(keys_split)})")
+
+comm.Barrier()
+print(f"Process {rank} finished.")

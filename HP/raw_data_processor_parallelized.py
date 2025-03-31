@@ -148,9 +148,9 @@ if __name__ == '__main__':
         ]
         average_construction_year = buildings['GBAUJ'].mean()
         buildings['GBAUJ'] = buildings['GBAUJ'].fillna(average_construction_year)
-        buildings['GASTW'] = buildings['GASTW'].fillna(1)
-        buildings['GANZWHG'] = buildings['GANZWHG'].fillna(buildings['GASTW'])
-        buildings['GEBF'] = buildings['GEBF'].fillna(buildings['GAREA'] * buildings['GASTW'])
+        buildings['GASTW'] = buildings['GASTW'].fillna(1) # floor
+        buildings['GANZWHG'] = buildings['GANZWHG'].fillna(buildings['GASTW']) # number of apartments
+        buildings['GEBF'] = buildings['GEBF'].fillna(buildings['GAREA'] * buildings['GASTW']) 
 
         # Create chunks
         total_buildings = len(buildings.index)
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
         # Save to CSV
         buildings.to_csv(
-            os.path.join(save_path, 'Buildings_data_new.csv'),
+            os.path.join(save_path, 'Buildings_data.csv'),
             columns=['EGID', 'GKODN', 'GKODE', 'HBLD', 'CBLD', 'PRT', 'GEBF', 'GAREA', 'ISHP', 'T_PROFILE'],
             index=False
         )

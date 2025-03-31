@@ -7,11 +7,10 @@ import json
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
 from geovoronoi import points_to_coords
-import tqdm
 from shapely.geometry import Point
 import warnings
-from shapely import wkt
 from scipy.spatial import Voronoi
+from mpi4py import MPI
 warnings.filterwarnings('ignore')
 
 dict_path = 'data_processing/'
@@ -21,32 +20,26 @@ class MV_allocation():
         self.BUFFER_DISTANCE = 3000
         self.script_path = os.path.dirname(os.path.abspath(__file__))
         self.data_path = os.path.join(self.script_path, 'PV_input', 'PV_data')
-        self.grid_path = 'MV/'
+        self.grid_path = 'PV/MV/'
         self.MV_id = dict()
         self.id = str
         self.save_path = os.path.join(self.script_path, 'PV_output','HP_allocation_MV') 
     
     def load_building_data(self):
-        try:
-            print('Loading the processed building data...')
-            buildings = pd.read_csv(self.data_path+'/rooftop_PV_CH_annual_by_building_MV_processed.csv')
-            buildings['geometry'] = buildings['geometry'].apply(wkt.loads)
-            buildings = gpd.GeoDataFrame(buildings, crs='EPSG:2056', geometry=buildings.geometry)
-            print('Finish loading the processed building data from the csv file.')
-        except:
-            buildings = pd.read_csv(os.path.join(self.data_path, 'rooftop_PV_CH_annual_by_building_MV.csv'))
-            buildings['geometry'] = [Point(xy) for xy in zip(buildings.XCOORD, buildings.YCOORD)]
-            buildings = gpd.GeoDataFrame(buildings, crs='EPSG:21781')
-            buildings = buildings.to_crs('EPSG:2056')
-            buildings['MV_grid'] = '-1'
-            buildings['MV_osmid'] = -1
-            buildings = buildings[['SB_UUID', 'geometry', 'LV_grid', 'LV_osmid','EPV_kWh_a']]
-            print('Transform the building data to the correct coordinate system.')
+        buildings = pd.read_csv(os.path.join(self.data_path, 'rooftop_PV_CH_annual_by_building.csv'))
+        EPV_threshold = buildings['EPV_kWh_a'].quantile(0.95)
+        buildings = buildings[buildings['EPV_kWh_a'] >= EPV_threshold]
+        buildings['geometry'] = [Point(xy) for xy in zip(buildings.XCOORD, buildings.YCOORD)]
+        buildings = gpd.GeoDataFrame(buildings, crs='EPSG:21781')
+        buildings = buildings.to_crs('EPSG:2056')
+        buildings = buildings[['SB_UUID', 'geometry', 'EPV_kWh_a']]
+        buildings['MV_grid'] = '-1'
+        buildings['MV_osmid'] = -1
         return buildings
 
     def load_grid_data(self):
         # load mv and lv node and edge data
-        MV_path = 'MV/'
+        MV_path = 'PV/MV/'
         mv_node_name = self.id+"_nodes"
         mv_node_gpd=gpd.read_file(MV_path+mv_node_name)
         mv_node_gpd['osmid'] = mv_node_gpd['osmid'].astype(int)
@@ -90,8 +83,8 @@ class MV_allocation():
         vertices = vor.vertices
         point_region = vor.point_region
         
-        print('Allocating buildings to the nodes...')
-        for i in tqdm.tqdm(range(len(mv_node_gpd))):
+        # print('Allocating buildings to the nodes...')
+        for i in range(len(mv_node_gpd)):
             cor = coords[i]
             region = regions[point_region[i]]
             if -1 in region:
@@ -103,7 +96,7 @@ class MV_allocation():
                 if bd['geometry'].within(Polygon(region_vertices)):
                     points_within_hull.at[j, 'MV_osmid'] = mv_node_gpd.iloc[i]['osmid']
                     points_within_hull.at[j, 'MV_grid'] = self.id
-        print('Building allocation is completed.')
+        # print('Building allocation is completed.')
         return points_within_hull
     
 def merge_update(building, building_part):
@@ -116,28 +109,83 @@ def merge_update(building, building_part):
 
 if __name__ == "__main__":
     PV = MV_allocation()
-    with open ('data_processing/list_test_id_MV.json', 'r') as f:
+    with open(PV.script_path + '/data_processing/list_test_id_MV.json', 'r') as f:
         PV.MV_id = json.load(f)
     buildings = PV.load_building_data()
+
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+
     # subtract the MV_id with index 821, this grid only has 1 node
-    PV.MV_id = PV.MV_id[0:821]+PV.MV_id[822:]
-    for id in PV.MV_id: 
+    PV.MV_id = PV.MV_id[0:821] + PV.MV_id[822:]
+
+    # Split the MV_id list among the available processes
+    MV_id_split = np.array_split(PV.MV_id, size)
+    local_MV_id = MV_id_split[rank]
+
+    for id in local_MV_id:
+        print('Processing grid {}...'.format(id))
         PV.id = id
         building_partly = PV.building_allocation(buildings)
-        if building_partly.empty:
-            continue
-        buildings = merge_update(buildings, building_partly)
-        index = PV.MV_id.index(id)
-        if index%200 == 0:
-            buildings.to_csv(PV.data_path+'/rooftop_PV_CH_annual_by_building_MV_processed.csv', index=False)
-            print("saving the changes of allocation to the csv file." +" ("+str(list(PV.MV_id).index(id)+1)+"/"+str(len(PV.MV_id))+")")
+        if not building_partly.empty:
+            buildings = merge_update(buildings, building_partly)
+            print(len(buildings[(buildings['MV_grid'] != '-1') & (buildings['MV_osmid'] != -1)]))
 
-    buildings.to_csv(PV.data_path+'/rooftop_PV_CH_annual_by_building_MV_processed.csv', index=False)
-    print("saving the changes of allocation to the csv file." +" ("+str(list(PV.MV_id).index(id)+1)+"/"+str(len(PV.MV_id))+")")
-    
-  
-    
-    
+    buildings_save = buildings[(buildings['MV_grid'] != '-1') & (buildings['MV_osmid'] != -1)]
+
+    # Gather the results from all processes
+    all_buildings_save = comm.gather(buildings_save, root=0)
+
+    if rank == 0:
+        final_buildings_save = pd.concat(all_buildings_save, ignore_index=True)
+        # Check for multiple entries with the same SB_UUID and randomly select one to keep
+        final_buildings_save = final_buildings_save.drop_duplicates(subset='SB_UUID', keep='first')
+        final_buildings_save = final_buildings_save.groupby('SB_UUID').apply(lambda x: x.sample(1)).reset_index(
+            drop=True)
+        final_buildings_save.to_csv(PV.data_path + '/PV_allocation_MV.csv', index=False)
+        print("MV data has been processed and saved.")
+
+    # for id in PV.MV_id:
+    #     PV.id = id
+    #     building_partly = PV.building_allocation(buildings)
+    #     if building_partly.empty:
+    #         continue
+    #     buildings = merge_update(buildings, building_partly)
+    #     index = PV.MV_id.index(id)
+    #     if index%200 == 0:
+    #         buildings.to_csv(PV.data_path+'/rooftop_PV_CH_annual_by_building_MV_processed.csv', index=False)
+    #         print("saving the changes of allocation to the csv file." +" ("+str(list(PV.MV_id).index(id)+1)+"/"+str(len(PV.MV_id))+")")
+    #
+    # buildings.to_csv(PV.data_path+'/rooftop_PV_CH_annual_by_building_MV_processed.csv', index=False)
+    # print("saving the changes of allocation to the csv file." +" ("+str(list(PV.MV_id).index(id)+1)+"/"+str(len(PV.MV_id))+")")
+    #
+    #
+    #
+    #
+    #
+    #
+    # for id in local_MV_id:
+    #     print('Processing grid {}...'.format(id))
+    #     HP_instance.id = id
+    #     building_partly = HP_instance.building_allocation(buildings)
+    #     if not building_partly.empty:
+    #         buildings = merge_update(buildings, building_partly)
+    #         print(len(buildings[(buildings['MV_grid'] != '-1') & (buildings['MV_osmid'] != -1)]))
+    #
+    # buildings_save = buildings[(buildings['MV_grid'] != '-1') & (buildings['MV_osmid'] != -1)]
+    #
+    # # Gather the results from all processes
+    # all_buildings_save = comm.gather(buildings_save, root=0)
+    #
+    # if rank == 0:
+    #     final_buildings_save = pd.concat(all_buildings_save, ignore_index=True)
+    #     final_buildings_save.to_csv('HP/HP_input/Buildings_data/Buildings_allocation_MV.csv', index=False)
+    #     print("MV data has been processed and saved.")
+    #
+    #
+    #
+    #
     
 
 
