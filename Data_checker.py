@@ -41,10 +41,10 @@ class DataChecker:
         self.simulation_years = [2030, 2040, 2050]
         self.map_color_min = 1e2
         self.map_color_max = 1e6
-        self.mv_to_BSF = None
+        self.mv_to_BFS = None
 
     def load_data(self):
-        self.mv_to_BSF_path = 'Plotting_data/mv_grid_canton.csv'
+        self.mv_to_BFS_path = 'Plotting_data/mv_grid_canton.csv'
         self.lv_basicload_shares_path = f'LV_basicload/LV_basicload_output/{self.simulation_year}/LV_basicload_shares.csv'
         self.lv_commercial_profiles_path = f'LV_basicload/LV_basicload_output/{self.simulation_year}/Commercial_profiles.csv'
         self.lv_residential_profiles_path = f'LV_basicload/LV_basicload_output/{self.simulation_year}/Residential_profiles.csv'
@@ -68,7 +68,7 @@ class DataChecker:
         self.ev_flexible_energy_profiles_path = f'EV/EV_output/{self.simulation_year}/EV_flexible_energy_profiles_LV.csv'
         self.ev_power_profiles_path = f'EV/EV_output/{self.simulation_year}/EV_power_profiles_LV.csv'
         # self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
-        self.mv_to_BSF = pd.read_csv(self.mv_to_BSF_path)
+        self.mv_to_BFS = pd.read_csv(self.mv_to_BFS_path)
         # self.lv_heat_pump_allocation_df = pd.read_csv(self.lv_hp_path)
         # self.lv_generation_df = pd.read_csv(self.lv_generation_path)
         # self.lv_p_installed_df = pd.read_csv(self.lv_p_installed_path)
@@ -90,8 +90,8 @@ class DataChecker:
         # self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
         # self.commercial_profiles_df = pd.read_csv(self.lv_commercial_profiles_path)
         # self.residential_profiles_df = pd.read_csv(self.lv_residential_profiles_path)
-        # self.mv_load_profile_df = pd.read_csv(self.mv_load_profile_path)
-        # self.load_mv_grids('PV/MV')
+        self.mv_load_profile_df = pd.read_csv(self.mv_load_profile_path)
+        self.load_mv_grids('PV/MV')
 
     def check_lv_grid_consistency(self):
         lv_basicload_grids = set(self.lv_basicload_shares_df['LV_grid'].unique())
@@ -250,8 +250,8 @@ class DataChecker:
         # Extract municipality codes and sum installed capacity
         self.lv_p_installed_df['municipality'] = self.lv_p_installed_df['LV_grid'].str.split('-').str[0]
 
-        # Extract municipality part from MV_grid using mv_to_BSF dataframe
-        self.mv_p_installed_df = self.mv_p_installed_df.merge(self.mv_to_BSF[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
+        # Extract municipality part from MV_grid using mv_to_BFS dataframe
+        self.mv_p_installed_df = self.mv_p_installed_df.merge(self.mv_to_BFS[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
                                             how='left')
         self.mv_p_installed_df['municipality'] = self.mv_p_installed_df['BFS'].astype(int)
 
@@ -643,8 +643,8 @@ class DataChecker:
         # Extract municipality part from grid_name
         self.lv_hp_df['municipality'] = self.lv_hp_df['LV_grid'].str.split('-').str[0].astype(int)
 
-        # Extract municipality part from MV_grid using mv_to_BSF dataframe
-        self.mv_hp_df = self.mv_hp_df.merge(self.mv_to_BSF[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
+        # Extract municipality part from MV_grid using mv_to_BFS dataframe
+        self.mv_hp_df = self.mv_hp_df.merge(self.mv_to_BFS[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
                                                 how='left')
         self.mv_hp_df['municipality'] = self.mv_hp_df['BFS'].astype(int)
 
@@ -743,8 +743,8 @@ class DataChecker:
         # Extract municipality part from grid_name
         self.lv_bess_df['municipality'] = self.lv_bess_df['LV_grid'].str.split('-').str[0].astype(int)
 
-        # Extract municipality part from MV_grid using mv_to_BSF dataframe
-        self.mv_bess_df = self.mv_bess_df.merge(self.mv_to_BSF[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
+        # Extract municipality part from MV_grid using mv_to_BFS dataframe
+        self.mv_bess_df = self.mv_bess_df.merge(self.mv_to_BFS[['grid', 'BFS']], left_on='MV_grid', right_on='grid',
                                                 how='left')
         self.mv_bess_df['municipality'] = self.mv_bess_df['BFS'].astype(int)
 
@@ -801,6 +801,10 @@ class DataChecker:
         base_profile = self.ev_power_profiles_df[self.ev_power_profiles_df['Type'] == 'Base'].iloc[:, 2:].sum()
         upper_bound = self.ev_power_profiles_df[self.ev_power_profiles_df['Type'] == 'Upper'].iloc[:, 2:].sum()
         lower_bound = self.ev_power_profiles_df[self.ev_power_profiles_df['Type'] == 'Lower'].iloc[:, 2:].sum()
+
+        # Calculate and print the peak EV consumption considering flexibility activation
+        peak_ev_consumption_mw = upper_bound.max() / 1000  # Convert to MW
+        print(f"Peak EV consumption considering flexibility activation: {peak_ev_consumption_mw:.2f} MW")
 
         plt.figure(figsize=(12, 6))
         plt.plot(base_profile, label='Base Profile')
@@ -994,6 +998,8 @@ class DataChecker:
                         'Peak_load': row['el_dmd']
                     })
         self.mv_grid_data = pd.DataFrame(grid_data)
+        # Save the DataFrame to a file
+        self.mv_grid_data.to_csv('Plotting_data/mv_grid_data.csv', index=False)
 
     def compute_lv_load_profiles(self, chunk_size=100000):
         # Merge lv_grid_data with lv_basicload_shares_df to get com_percentage and res_percentage
@@ -1291,7 +1297,7 @@ class DataChecker:
             else:
                 df = df.transpose()
                 df.columns = pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
-                df.rename_axis('BSF_municipality_code', inplace=True)
+                df.rename_axis('BFS_municipality_code', inplace=True)
                 if 'LV_osmid' in df.columns:
                     df['LV_osmid'] = df['LV_osmid'].astype(int)
                 if 'MV_osmid' in df.columns:
@@ -1325,11 +1331,11 @@ class DataChecker:
 
     def create_output_directory(self):
         for year in self.simulation_years:
-            self.load_and_modify_pv_data(year)
+            # self.load_and_modify_pv_data(year)
             # self.load_and_modify_hp_data(year)
             # self.load_and_modify_bess_data(year)
             # self.load_and_modify_ev_data(year)
-            # self.load_and_modify_lv_load_data(year)
+            self.load_and_modify_lv_load_data(year)
             # self.load_and_modify_mv_load_data(year)
 
     def calculate_correlation_coefficients(self):
@@ -1424,11 +1430,44 @@ class DataChecker:
             plt.savefig(f'Plotting_data/Switzerland_maps/{name}_correlation_matrix.svg', format='svg')
             plt.show()
 
+    def check_HP_buildings_allocation(self):
+
+        # File paths
+        buildings_data_path = r'C:\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\HP\HP_input\Buildings_data\Buildings_data.csv'
+        building_allocation_mv_path = r'C:\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\HP\HP_input\Buildings_data\Building_allocation_MV.csv'
+        building_allocation_lv_path = r'C:\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\HP\HP_input\Buildings_data\Building_allocation_LV.csv'
+        gebaeude_batiment_edificio_path = r'C:\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\HP\HP_input\Buildings_data\Buildings data Switzerland\gebaeude_batiment_edificio.csv'
+
+        # Load the CSV files
+        buildings_data_df = pd.read_csv(buildings_data_path)
+        building_allocation_mv_df = pd.read_csv(building_allocation_mv_path)
+        building_allocation_lv_df = pd.read_csv(building_allocation_lv_path)
+        gebaeude_batiment_edificio_df = pd.read_csv(gebaeude_batiment_edificio_path, delimiter='\t')
+
+        # Extract EGID sets
+        egid_gebaeude = set(gebaeude_batiment_edificio_df['EGID'])
+        egid_buildings_data = set(buildings_data_df['EGID'])
+        egid_building_allocation_mv = set(building_allocation_mv_df['EGID'])
+        egid_building_allocation_lv = set(building_allocation_lv_df['EGID'])
+
+        # Combine LV and MV allocation EGIDs
+        egid_building_allocation_combined = egid_building_allocation_mv | egid_building_allocation_lv
+
+        # Compute presence percentages
+        percentage_in_buildings_data = len(egid_gebaeude & egid_buildings_data) / len(egid_gebaeude) * 100
+        percentage_in_building_allocation_combined = len(egid_gebaeude & egid_building_allocation_combined) / len(
+            egid_gebaeude) * 100
+
+        print(
+            f"Percentage of EGIDs in gebaeude_batiment_edificio.csv present in Buildings_data.csv: {percentage_in_buildings_data:.2f}%")
+        print(
+            f"Percentage of EGIDs in gebaeude_batiment_edificio.csv present in combined Building_allocation (LV and MV): {percentage_in_building_allocation_combined:.2f}%")
+
 if __name__ == "__main__":
     checker = DataChecker()
-    checker.simulation_year = 2050
-    checker.create_output_directory()
-    # checker.load_data()
+    checker.simulation_year = 2030
+    # checker.create_output_directory()
+    checker.load_data()
     # checker.calculate_correlation_coefficients()
     # checker.compute_lv_load_profiles()
     # checker.compute_mv_load_profiles()
@@ -1446,3 +1485,4 @@ if __name__ == "__main__":
     # checker.plot_cov_histogram()
     # checker.compute_pv_power_and_generation()
     # checker.check_lv_grid_consistency()
+    # checker.check_HP_buildings_allocation()

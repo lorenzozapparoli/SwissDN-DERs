@@ -167,19 +167,6 @@ class Plotter:
                     bbox_inches='tight')
         plt.show()
 
-    def generate_plots(self):
-        self.load_data()
-        self.load_hourly_data()
-        self.compute_load()
-        self.compute_hourly_load()
-        self.plot_heatmap()
-        # self.plot_hourly_profiles_switzerland(day=70)  # Example: 1st of May is the 121st day of the year
-        # self.plot_monthly_profiles_switzerland()
-        # self.plot_daily_boxplot_switzerland()
-        self.plot_hourly_profiles_single_grid(day=70)  # Example: 1st of May is the 121st day of the year
-        self.plot_monthly_profiles_single_grid()
-        self.plot_daily_boxplot_single_grid()
-
     def plot_hourly_profiles_single_grid(self, day):
         start_hour = (day - 1) * 24
         end_hour = start_hour + 24
@@ -292,9 +279,110 @@ class Plotter:
                     format='svg', bbox_inches='tight')
         plt.show()
 
+    def plot_boxplots(self):
+        base_path = os.path.join(os.path.dirname(os.getcwd()), 'SwissPDG_DERs')
+        year_path = str(self.year)
+
+        # File paths for DERs
+        pv_lv_path = os.path.join(base_path, '01_PV', year_path, 'LV_P_installed.csv')
+        pv_mv_path = os.path.join(base_path, '01_PV', year_path, 'MV_P_installed.csv')
+        bess_lv_path = os.path.join(base_path, '02_BESS', year_path, 'BESS_allocation_LV.csv')
+        bess_mv_path = os.path.join(base_path, '02_BESS', year_path, 'BESS_allocation_MV.csv')
+        hp_lv_path = os.path.join(base_path, '03_HP', year_path, 'LV_heat_pump_allocation.csv')
+        hp_mv_path = os.path.join(base_path, '03_HP', year_path, 'MV_heat_pump_allocation.csv')
+        ev_allocation_lv_path = os.path.join(base_path, '04_EV', year_path, 'EV_allocation_LV.csv')
+        ev_power_profiles_lv_path = os.path.join(base_path, '04_EV', year_path, 'EV_power_profiles_LV.csv')
+
+        # File paths for nodal demand
+        mv_grid_data_path = 'mv_grid_data.csv'
+        lv_grid_data_path = 'lv_grid_data.csv'
+
+        # Load data for DERs
+        pv_lv_df = pd.read_csv(pv_lv_path)
+        pv_mv_df = pd.read_csv(pv_mv_path)
+        bess_lv_df = pd.read_csv(bess_lv_path)
+        bess_mv_df = pd.read_csv(bess_mv_path)
+        hp_lv_df = pd.read_csv(hp_lv_path)
+        hp_mv_df = pd.read_csv(hp_mv_path)
+        ev_allocation_lv_df = pd.read_csv(ev_allocation_lv_path)
+        ev_power_profiles_lv_df = pd.read_csv(ev_power_profiles_lv_path)
+
+        # Load data for nodal demand
+        mv_grid_data_df = pd.read_csv(mv_grid_data_path)
+        lv_grid_data_df = pd.read_csv(lv_grid_data_path)
+
+        # EV peak power per municipality
+        # ev_power_profiles_lv_df['BFS_municipality_code'] = ev_power_profiles_lv_df['LV_grid'].str.split('-').str[0]
+        ev_peak_power = ev_power_profiles_lv_df.groupby('BFS_municipality_code').max().iloc[:, 1:].max(
+            axis=1).reset_index()
+
+        # Merge EV allocation with peak power
+        ev_allocation_lv_df['BFS_municipality_code'] = ev_allocation_lv_df['LV_grid'].str.split('-').str[0].astype(int)
+        ev_allocation_lv_df = ev_allocation_lv_df.merge(ev_peak_power, on='BFS_municipality_code')
+        ev_allocation_lv_df['New_EV_share'] = ev_allocation_lv_df['EV_share'] * ev_allocation_lv_df.iloc[:, -1]
+
+        # Prepare data for boxplots, discarding elements equal to zero
+        lv_data = [pv_lv_df['P_installed_kW'][pv_lv_df['P_installed_kW'] != 0],
+                   bess_lv_df['Nominal_power_kW'][bess_lv_df['Nominal_power_kW'] != 0],
+                   hp_lv_df['Nominal_power_kW'][hp_lv_df['Nominal_power_kW'] != 0],
+                   # ev_allocation_lv_df['New_EV_share'][ev_allocation_lv_df['New_EV_share'] != 0],
+                   # lv_grid_data_df['Peak_load'][lv_grid_data_df['Peak_load'] != 0] * 1000
+                   ]
+        mv_data = [pv_mv_df['P_installed_kW'][pv_mv_df['P_installed_kW'] != 0],
+                   bess_mv_df['Nominal_power_kW'][bess_mv_df['Nominal_power_kW'] != 0],
+                   hp_mv_df['Nominal_power_kW'][hp_mv_df['Nominal_power_kW'] != 0],
+                   #mv_grid_data_df['Peak_load'][mv_grid_data_df['Peak_load'] != 0] * 1000
+                   ]
+
+        # Plot LV boxplot
+        self.plot_boxplot(lv_data, ['PV', 'BESS', 'HP',
+                                    # 'EV', 'Demand'
+                                    ], 'LV Nodal Power Distribution', 'LV')
+
+        # Plot MV boxplot
+        self.plot_boxplot(mv_data, ['PV', 'BESS', 'HP'
+                                    # , 'Demand'
+                                    ], 'MV Nodal Power Distribution', 'MV')
+
+    def plot_boxplot(self, data, labels, title, grid_type='LV'):
+        fig, ax = plt.subplots(figsize=self.figsize)
+        box = ax.boxplot(data, patch_artist=True, medianprops=dict(color='black'), showfliers=False)
+
+        # Update colors for MV and LV boxplots
+        if grid_type == 'LV':
+            colors = [self.color_palette[0], self.color_palette[7], self.color_palette[2], self.color_palette[4],
+                      self.color_palette[6]]
+            ax.set_ylim(0, 30)
+        else:
+            colors = [self.color_palette[0], self.color_palette[7], self.color_palette[2], self.color_palette[6]]
+            ax.set_ylim(0, 600)
+
+        for patch, color in zip(box['boxes'], colors):
+            patch.set_facecolor(color)
+
+        ax.set_xticklabels(labels)
+        ax.set_ylabel('Nodal Power (kW)')
+        ax.set_title(title)
+        plt.savefig(os.path.join(os.getcwd(), 'Deployment_histograms', f'boxplot_{title}.svg'), format='svg',
+                    bbox_inches='tight')
+        plt.show()
+
+    def generate_plots(self):
+        # self.load_data()
+        # self.load_hourly_data()
+        # self.compute_load()
+        # self.compute_hourly_load()
+        # self.plot_heatmap()
+        # self.plot_hourly_profiles_switzerland(day=70)  # Example: 1st of May is the 121st day of the year
+        # self.plot_monthly_profiles_switzerland()
+        # self.plot_daily_boxplot_switzerland()
+        # self.plot_hourly_profiles_single_grid(day=70)  # Example: 1st of May is the 121st day of the year
+        # self.plot_monthly_profiles_single_grid()
+        # self.plot_daily_boxplot_single_grid()
+        self.plot_boxplots()
 
 # Generate plots for 2030, 2040, and 2050
-for year in [2030, 2040, 2050]:
+for year in [2050]:
     plotter = Plotter(year, font_path='C:/Windows/Fonts')  # Update the path to the CMU Bright font
     # plotter.plot_daily_boxplot_single_grid()
     plotter.generate_plots()

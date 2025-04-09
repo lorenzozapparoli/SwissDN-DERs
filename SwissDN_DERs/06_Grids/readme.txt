@@ -1,0 +1,1 @@
+This folder contains the grids for the integrated medium-low voltage system 459_0. Refer to the grids repository to gather all the grids, replacing the LV and MV .zip folders.

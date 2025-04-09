@@ -66,7 +66,7 @@ class GridLoader:
             """
             Load the LV grid data based on the grid name.
             """
-            lv_folder_path = os.path.join(self.script_path, '06_PDGs')
+            lv_folder_path = os.path.join(self.script_path, '06_Grids')
             dict_file_path = os.path.join(lv_folder_path, 'dict_folder.json')
 
             # Load the dictionary mapping municipality codes to folder names
@@ -95,7 +95,7 @@ class GridLoader:
             """
             Load the MV grid data based on the grid name.
             """
-            mv_folder_path = os.path.join(self.script_path, '06_PDGs')
+            mv_folder_path = os.path.join(self.script_path, '06_Grids')
 
             folder_name = 'MV'
             # Construct the path to the zipped folder
@@ -187,7 +187,7 @@ class GridLoader:
         """
         Load and process the heat pumps data based on the grid type and time window.
         """
-        base_path = os.path.join(self.script_path, '02_HP', str(self.data_year))
+        base_path = os.path.join(self.script_path, '03_HP', str(self.data_year))
         allocation_file = 'LV_heat_pump_allocation.csv' if self.grid_type == 'LV' else 'MV_heat_pump_allocation.csv'
         temperature_file = 'Temperature_profiles.csv'
 
@@ -215,21 +215,13 @@ class GridLoader:
         profile_names = filtered_allocation_df['Temperature_profile_name'].unique()
         filtered_temperature_df = temperature_df[temperature_df['Temperature_profile_name'].isin(profile_names)]
 
-        # Create a list of datetime columns based on the start and end dates
-        start_hour = (self.start_date - datetime(self.start_date.year, 1, 1)).total_seconds() // 3600
-        date_range = pd.date_range(self.start_date, self.end_date, freq='h')
-        date_columns = [f"{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:00:00" for dt in date_range]
+        # Filter the columns based on the specified time interval
+        date_columns = [col for col in filtered_temperature_df.columns if col != 'Temperature_profile_name']
+        filtered_columns = [col for col in date_columns if
+                            self.start_date <= datetime.strptime(col, '%m-%d %H:%M:%S') <= self.end_date]
 
-        # Create a dictionary for the temperature profiles in the considered time interval
-        temperature_profiles_data = {
-            'Temperature_profile_name': filtered_temperature_df['Temperature_profile_name'].values}
-
-        for i, col in enumerate(date_columns):
-            temperature_profiles_data[col] = filtered_temperature_df[str(int(start_hour) + i + 1)].values
-
-        # Create the temperature profiles DataFrame using pd.concat
-        temperature_profiles = pd.concat([pd.Series(data, name=key) for key, data in temperature_profiles_data.items()],
-                                         axis=1)
+        # Create the temperature profiles DataFrame
+        temperature_profiles = filtered_temperature_df[['Temperature_profile_name'] + filtered_columns]
 
         self.hp_allocation = filtered_allocation_df
         self.temperature_profiles = temperature_profiles
@@ -249,7 +241,6 @@ class GridLoader:
         base_path = os.path.join(self.script_path, '04_EV', str(self.data_year))
         files = {
             'allocation': 'EV_allocation_LV.csv',
-            'energy_profiles': 'EV_energy_profiles_LV.csv',
             'flexible_energy_profiles': 'EV_flexible_energy_profiles_LV.csv',
             'power_profiles': 'EV_power_profiles_LV.csv'
         }
@@ -282,7 +273,7 @@ class GridLoader:
         bfs_code = self.grid_name.split('-')[0]
 
         # Filter the other DataFrames based on BFS municipality code
-        for key in ['energy_profiles', 'flexible_energy_profiles', 'power_profiles']:
+        for key in ['flexible_energy_profiles', 'power_profiles']:
             df = dataframes[key]
             if df is not None:
                 filtered_df = df[df['BFS_municipality_code'] == int(bfs_code)]
@@ -294,53 +285,32 @@ class GridLoader:
             else:
                 dataframes[key] = None
 
-        self.ev_energy_profiles = dataframes['energy_profiles']
         self.ev_flexible_energy_profiles = dataframes['flexible_energy_profiles']
         self.ev_power_profiles = dataframes['power_profiles']
 
         # Filter the time range for EV_power_profiles_LV
         if self.ev_power_profiles is not None:
-            start_hour = (self.start_date - datetime(self.start_date.year, 1, 1)).total_seconds() // 3600
-            date_range = pd.date_range(self.start_date, self.end_date, freq='h')
-            date_columns = [f"{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:00:00" for dt in date_range]
-            power_profiles_data = {'BFS_municipality_code': self.ev_power_profiles['BFS_municipality_code'].values}
-            power_profiles_data['Profile_type'] = self.ev_power_profiles['Profile_type'].values
-            for i, col in enumerate(date_columns):
-                power_profiles_data[col] = self.ev_power_profiles.iloc[:, int(start_hour) + i + 2].values
-            self.ev_power_profiles = pd.concat([pd.Series(data, name=key) for key, data in power_profiles_data.items()],
-                                               axis=1)
+            date_columns = [col for col in self.ev_power_profiles.columns if
+                            (col != 'BFS_municipality_code' and col != 'Profile_type')]
+            filtered_columns = [col for col in date_columns if
+                                self.start_date <= datetime.strptime(col, '%m-%d %H:%M:%S') <= self.end_date]
+            self.ev_power_profiles = self.ev_power_profiles[
+                ['BFS_municipality_code', 'Profile_type'] + filtered_columns]
 
         # Filter the time range for EV_flexible_energy_profiles_LV
         if self.ev_flexible_energy_profiles is not None:
-            start_day = (self.start_date - datetime(self.start_date.year, 1, 1)).days
-            date_range = pd.date_range(self.start_date, self.end_date, freq='D')
-            date_columns = [f"{dt.month:02d}-{dt.day:02d} 00:00:00" for dt in date_range]
-            flexible_profiles_data = {
-                'BFS_municipality_code': self.ev_flexible_energy_profiles['BFS_municipality_code'].values}
-            for i, col in enumerate(date_columns):
-                flexible_profiles_data[col] = self.ev_flexible_energy_profiles.iloc[:, start_day + i + 1].values
-            self.ev_flexible_energy_profiles = pd.concat(
-                [pd.Series(data, name=key) for key, data in flexible_profiles_data.items()], axis=1)
-
-        # Filter the time range for EV_energy_profiles_LV
-        if self.ev_energy_profiles is not None:
-            start_week = (self.start_date - datetime(self.start_date.year, 1, 1)).days // 7
-            date_range = pd.date_range(self.start_date, self.end_date, freq='W-MON')
-            date_columns = [f"{dt.month:02d}-{dt.day:02d} 00:00:00" for dt in date_range]
-            energy_profiles_data = {'BFS_municipality_code': self.ev_energy_profiles['BFS_municipality_code'].values}
-            for i, col in enumerate(date_columns):
-                if start_week + i + 1 < len(self.ev_energy_profiles.columns):
-                    energy_profiles_data[col] = self.ev_energy_profiles.iloc[:, start_week + i + 1].values
-                else:
-                    energy_profiles_data[col] = self.ev_energy_profiles.iloc[:, start_week + i].values
-            self.ev_energy_profiles = pd.concat(
-                [pd.Series(data, name=key) for key, data in energy_profiles_data.items()], axis=1)
+            date_columns = [col for col in self.ev_flexible_energy_profiles.columns if
+                            col != 'BFS_municipality_code']
+            filtered_columns = [col for col in date_columns if
+                                self.start_date <= datetime.strptime(col, '%m-%d') <= self.end_date]
+            self.ev_flexible_energy_profiles = self.ev_flexible_energy_profiles[
+                ['BFS_municipality_code'] + filtered_columns]
 
     def load_bess_data(self):
         """
         Load and process the BESS data based on the grid type.
         """
-        base_path = os.path.join(self.script_path, '03_BESS', str(self.data_year))
+        base_path = os.path.join(self.script_path, '02_BESS', str(self.data_year))
         allocation_file = 'BESS_allocation_LV.csv' if self.grid_type == 'LV' else 'BESS_allocation_MV.csv'
         allocation_path = os.path.join(base_path, allocation_file)
 
@@ -403,11 +373,11 @@ class GridLoader:
             residential_profiles_df = dataframes['residential_profiles']
             if commercial_profiles_df is not None and residential_profiles_df is not None:
                 commercial_profile = commercial_profiles_df[
-                    commercial_profiles_df['BSF_municipality_code'] == int(bfs_code)]
+                    commercial_profiles_df['BFS_municipality_code'] == int(bfs_code)]
                 residential_profile = residential_profiles_df[
-                    residential_profiles_df['BSF_municipality_code'] == int(bfs_code)]
+                    residential_profiles_df['BFS_municipality_code'] == int(bfs_code)]
                 if commercial_profile.empty or residential_profile.empty:
-                    print(f"No profiles found for BSF municipality code {bfs_code}.")
+                    print(f"No profiles found for BFS municipality code {bfs_code}.")
                     self.lv_load_profiles = None
                     return
             else:
@@ -417,61 +387,61 @@ class GridLoader:
             # Create the new DataFrame with weighted average profiles
             load_profiles_data = {'LV_grid': filtered_shares_df['LV_grid'].values,
                                   'LV_osmid': filtered_shares_df['LV_osmid'].values}
-            for i in range(8760):
-                commercial_load = commercial_profile.iloc[:, i + 1].values
-                residential_load = residential_profile.iloc[:, i + 1].values
+            for col in commercial_profile.columns[1:]:
+                commercial_load = commercial_profile[col].values
+                residential_load = residential_profile[col].values
                 commercial_share = filtered_shares_df['Commercial_demand_share'].values
                 residential_share = filtered_shares_df['Residential_demand_share'].values
-                load_profiles_data[
-                    f"hour_{i + 1}"] = commercial_load * commercial_share + residential_load * residential_share
+                load_profiles_data[col] = commercial_load * commercial_share + residential_load * residential_share
 
             load_profiles_df = pd.DataFrame(load_profiles_data)
 
-            # Filter the time steps within the time interval of interest and rename them
-            start_hour = (self.start_date - datetime(self.start_date.year, 1, 1)).total_seconds() // 3600
-            date_range = pd.date_range(self.start_date, self.end_date, freq='h')
-            date_columns = [f"{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:00:00" for dt in date_range]
-            filtered_columns = [f"hour_{int(start_hour) + i + 1}" for i in range(len(date_columns))]
-            load_profiles_df = load_profiles_df[['LV_grid', 'LV_osmid'] + filtered_columns]
-            load_profiles_df.columns = ['LV_grid', 'LV_osmid'] + date_columns
+            # Filter the time steps within the time interval of interest
+            date_columns = [col for col in load_profiles_df.columns[2:] if
+                            self.start_date <= datetime.strptime(col, '%m-%d %H:%M:%S') <= self.end_date]
+            load_profiles_df = load_profiles_df[['LV_grid', 'LV_osmid'] + date_columns]
 
             self.load_profiles = load_profiles_df
 
         elif self.grid_type == 'MV':
-            base_path = os.path.join(self.script_path, 'Demand', str(self.data_year))
+            base_path = os.path.join(self.script_path, '05_Demand', str(self.data_year))
             file_path = os.path.join(base_path, 'MV_load_profile.csv')
-
             if not os.path.exists(file_path):
                 print(f"File MV_load_profile.csv not found in {base_path}.")
                 self.mv_load_profiles = None
                 return
 
-            mv_load_profile_df = pd.read_csv(file_path)
+            # Load the MV load profile
+            with open(file_path, 'r') as f:
+                lines = f.readlines()
+                timestamps = lines[0].strip().split(',')
+                values = lines[1].strip().split(',')
+
+            # Convert timestamps to datetime objects
+            timestamps = [datetime.strptime(ts, '%m-%d %H:%M:%S') for ts in timestamps]
+
+            # Create a DataFrame
+            mv_load_profile_df = pd.DataFrame({
+                'Timestamp': timestamps,
+                'Value': values
+            })
 
             # Load the MV nodes file to get the osmid values
-            if not os.path.exists(self.nodes_file):
-                print(f"Nodes file for {self.grid_name} not found.")
-                self.mv_load_profiles = None
-                return
-
-            nodes_df = gpd.read_file(self.nodes_file)
+            if self.nodes is None:
+                self.load_grid()
+            nodes_df = self.nodes.copy()
             nodes_df = nodes_df[nodes_df['lv_grid'] == '-1']
 
             # Create the new DataFrame with the load profile for each node
             load_profiles_data = {'MV_grid': [self.grid_name] * len(nodes_df), 'MV_osmid': nodes_df['osmid'].values}
-            for i in range(8760):
-                load_profiles_data[f"hour_{i + 1}"] = mv_load_profile_df.iloc[i, 0]
-
+            for i, ts in enumerate(timestamps):
+                load_profiles_data[ts.strftime('%m-%d %H:%M:%S')] = mv_load_profile_df['Value'].iloc[i]
             load_profiles_df = pd.DataFrame(load_profiles_data)
 
-            # Filter the time steps within the time interval of interest and rename them
-            start_hour = (self.start_date - datetime(self.start_date.year, 1, 1)).total_seconds() // 3600
-            date_range = pd.date_range(self.start_date, self.end_date, freq='h')
-            date_columns = [f"{dt.month:02d}-{dt.day:02d} {dt.hour:02d}:00:00" for dt in date_range]
-            filtered_columns = [f"hour_{int(start_hour) + i + 1}" for i in range(len(date_columns))]
+            # Filter the time steps within the time interval of interest
+            filtered_columns = [col for col in load_profiles_df.columns[2:] if
+                                self.start_date <= datetime.strptime(col, '%m-%d %H:%M:%S') <= self.end_date]
             load_profiles_df = load_profiles_df[['MV_grid', 'MV_osmid'] + filtered_columns]
-            load_profiles_df.columns = ['MV_grid', 'MV_osmid'] + date_columns
-
             self.load_profiles = load_profiles_df
 
     def add_fields_to_nodes(self):
@@ -700,8 +670,8 @@ if __name__ == "__main__":
     loader.load_bess_data()
     loader.load_conventional_load_profiles()
     loader.extract_and_save_profiles()
-    # loader.add_fields_to_nodes()
-    # loader.plot_grid(zoom_coords=[0.0, 0.0, 0.5, 0.5])
+    loader.add_fields_to_nodes()
+    loader.plot_grid(zoom_coords=[0.0, 0.0, 0.5, 0.5])
     # print(loader.nodes)
     # # print(loader.temperature_profiles)
     # # print(loader.ev_flexible_energy_profiles)
