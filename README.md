@@ -7,10 +7,10 @@ Important: This repository does not include the input datasets, intermediate pro
 ## 🧠 Methodology Overview
 The generation of the high-resolution DER dataset follows a two-step process:
 
-- Data Retrieval and Processing
+- Data Retrieval and Processing:
 Input data for DER technologies (PVs, BESSs, EVs, HPs) and non-controllable loads is collected, preprocessed, and temporally standardized. This includes forecasts for 2030, 2040, and 2050.
 
-- Integration into Swiss Distribution Grids
+- Integration into Swiss Distribution Grids:
 The processed data is geographically and electrically mapped to detailed distribution grid models of Switzerland, including 879 medium-voltage (MV) and 34,920 low-voltage (LV) grids.
 
 ## ⚙️ How to Run the Code
