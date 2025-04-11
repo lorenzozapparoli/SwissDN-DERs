@@ -19,8 +19,8 @@ The processed data is geographically and electrically mapped to detailed distrib
     git clone <repository_url>
     cd <repository_directory>
     ```
-- **Gather Input Files**: Collect the required input files from the sources described in the related paper. Place these files in the appropriate directories as specified in the folder structure and in the scripts.  
-- **Install Dependencies**: Install the required Python packages:
+- **Gather Input Files**: Collect the required input files from the sources described in the related paper. Place these files in the appropriate directories as specified in the folder structure and in the scripts. In case of doubt contact the authors of the paper.
+- **Install Dependencies**: Make sure you have **Python 3.11** or later installed. Then, install the required Python packages:
     ```bash
     # Create a new conda environment
     conda env create -f environment.yml
@@ -102,6 +102,10 @@ This work is released for academic use. This work is licensed under a CC BY 4.0 
 - **DERs**: [to be published]
 - **Grids**: Alfredo Oneto, Blazhe Gjorgiev, Filippo Tettamanti, Giovanni Sansavini, Large-scale generation of geo-referenced power distribution grids from open data with load clustering,
 Sustainable Energy, Grids and Networks, Volume 42, 2025, 101678, ISSN 2352-4677, https://doi.org/10.1016/j.segan.2025.101678.
+
+In case of doubt, please contact the authors of the paper:
+- **Lorenzo Zapparoli**: lzapparoli@ethz.ch
+- **Alfredo Oneto**: aoneto@ethz.ch
 
 
 ## 🗂️ Directory Structure
