@@ -1,3 +1,27 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `raw_data_processor_parallelized.py`, is designed to process building registry data and define heat pump (HP) parameters for each building. The parameters are determined based on building characteristics, construction year, and geographical location, following the methodology described in the related paper. The script uses parallel processing with MPI to handle large datasets efficiently.
+
+The script calculates key parameters such as thermal capacitance, thermal conductance, rated power, and heat pump type for each building. It also assigns the closest temperature measuring station to each building for further analysis. The results are saved in a CSV file for subsequent use in energy system modeling.
+
+Usage:
+1. Ensure the required input files (building registry, configuration files, and temperature data) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output file Buildings_data.csv will be saved in the `HP_input/Buildings_data/` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- mpi4py
+- shapely
+
+"""
+
 import pandas as pd
 import numpy as np
 import os
@@ -6,20 +30,30 @@ import geopandas as gpd
 from mpi4py import MPI  
 from shapely.geometry import Point
 
+
 # Function to determine heat pump presence
 def determine_HP_presence(penetration):
     """
     Determine if a building has a heat pump based on a given penetration.
 
     Args:
-        rate (float): The probability of having a heat pump.
+        penetration (float): The probability of having a heat pump.
 
     Returns:
         int: 1 if a heat pump is present, 0 otherwise.
     """
+
     return 1 if np.random.rand() <= penetration else 0
 
+
 def get_average_rated_power():
+    """
+        Computes the average rated power for single-family and multi-family houses based on building characteristics.
+
+        Returns:
+            tuple: DataFrames containing the average rated power for multi-family and single-family houses.
+    """
+
     P_rated_params = RLC_parameters['P_rated']
     MFH = RLC_parameters['Multi_Family_House']
     SFH = RLC_parameters['Single_Family_House']
@@ -41,7 +75,20 @@ def get_average_rated_power():
     P_rated_SFH = compute_p_rated(SFH)
     return P_rated_MFH, P_rated_SFH
 
+
 def determine_HP_configuration(year, is_single, is_residential):
+    """
+    Determines the heat pump configuration for a building based on its construction year, type, and usage.
+
+    Args:
+        year (int): Construction year of the building.
+        is_single (bool): Whether the building is a single-family house.
+        is_residential (bool): Whether the building is residential.
+
+    Returns:
+        tuple: Thermal capacitance, thermal conductance, rated power, and heat pump type.
+    """
+
     P_rated_MFH, P_rated_SFH = get_average_rated_power()
     if is_single:
         H_B = RLC_parameters['Building_U_SFH']['Hbldg/Area[W/m2K]']
@@ -52,7 +99,7 @@ def determine_HP_configuration(year, is_single, is_residential):
     C_B_rate = 0.3 / 3.6
     # Specific thermal conductance based on the year
     years_slot = np.where(RLC_parameters['Building_HandT']['Starting Year'] <= year)[0][-1]
-    H_B_rate = H_B[years_slot] # in W/m2K
+    H_B_rate = H_B[years_slot]  # in W/m2K
     # Determine temperature parameters
     T_HK_M8_temp = RLC_parameters['Building_HandT']['T_HK_M8_temp'][years_slot]
     T_HK_15_temp = RLC_parameters['Building_HandT']['T_HK_15_temp'][years_slot]
@@ -74,8 +121,27 @@ def determine_HP_configuration(year, is_single, is_residential):
     
     return C_B_rate, H_B_rate, T_HK_M8_temp, T_HK_15_temp, P_rate, HP_type
 
+
 def closest_temperature_measuring_station(X, Y):
-    crs_point = "EPSG:2056"
+    """
+    Processes a subset of buildings to calculate heat pump parameters and assign temperature stations.
+
+    Args:
+        sub_buildings (DataFrame): Subset of building data to process.
+
+    Returns:
+        list: A list of tuples containing calculated parameters for each building.
+
+    Description:
+        - Iterates through each building in the subset.
+        - Determines if the building is residential or non-residential based on its category.
+        - Randomly assigns heat pump presence based on penetration probability.
+        - Calculates heat pump parameters (thermal capacitance, conductance, rated power, etc.)
+          based on building characteristics.
+        - Assigns the closest temperature measuring station to the building.
+        - Appends the calculated parameters and station assignment to the results list.
+    """
+
     # Convert the point of interest to the same CRS as the GeoDataFrame
     point_of_interest = Point(X, Y)
     # Calculate distances
@@ -85,7 +151,27 @@ def closest_temperature_measuring_station(X, Y):
     # Get the name of the closest label
     return closest_label['station']  # Assuming 'name' is the column with label names
 
+
 def buildings_block_solver(sub_buildings):
+    """
+    Processes a subset of buildings to calculate heat pump parameters and assign temperature stations.
+
+    Args:
+        sub_buildings (DataFrame): Subset of building data to process.
+
+    Returns:
+        list: A list of tuples containing calculated parameters for each building.
+
+    Description:
+        - Iterates through each building in the subset.
+        - Determines if the building is residential or non-residential based on its category.
+        - Randomly assigns heat pump presence based on penetration probability.
+        - Calculates heat pump parameters (thermal capacitance, conductance, rated power, etc.)
+          based on building characteristics.
+        - Assigns the closest temperature measuring station to the building.
+        - Appends the calculated parameters and station assignment to the results list.
+    """
+
     results = []
     for _, building in sub_buildings.iterrows():
         # Process each building
@@ -105,6 +191,7 @@ def buildings_block_solver(sub_buildings):
                         T_HK_15_temp, P_rate * ref_area, ref_area, HP_type, T_station))
     return results
 
+
 if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -113,10 +200,10 @@ if __name__ == '__main__':
     if rank == 0:
         # Set paths
         script_path = os.path.dirname(os.path.abspath(__file__))
-        data_path = os.path.join(script_path,"HP_input", "Buildings_data", "Buildings data Switzerland")
-        config_path = os.path.join(script_path,"HP_input", "configuration_files")
-        tempertures_path = os.path.join(script_path,"HP_input", "Temperature_data")
-        save_path = os.path.join(script_path,"HP_input", "Buildings_data")
+        data_path = os.path.join(script_path, "HP_input", "Buildings_data", "Buildings data Switzerland")
+        config_path = os.path.join(script_path, "HP_input", "configuration_files")
+        temperatures_path = os.path.join(script_path, "HP_input", "Temperature_data")
+        save_path = os.path.join(script_path, "HP_input", "Buildings_data")
 
         # Read and preprocess data
         heat_pumps_penetration = 0.3
@@ -133,7 +220,7 @@ if __name__ == '__main__':
             'Multi_Family_House', 'Single_Family_House', 'Building_C',
             'Building_HandT', 'P_rated', 'Building_U_MFH', 'Building_U_SFH'])
 
-        file_path = os.path.join(tempertures_path, "station_locations.csv")
+        file_path = os.path.join(temperatures_path, "station_locations.csv")
         temperature_stations = pd.read_csv(file_path)
         temperature_stations = gpd.GeoDataFrame(
             temperature_stations,

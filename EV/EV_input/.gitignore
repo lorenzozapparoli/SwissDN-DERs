@@ -1,5 +1,4 @@
-EV/EV_input/CP_y4.csv
-EV/EV_input/FE_y4.csv
-EV/EV_input/nine_zones 2.geojson
-EV/EV_input/PD_y4.csv
-EV/EV_input/PU_y4.csv
+EV/EV_input/Municipality_hourly_upper_charging_power_bound_2050.csv
+EV/EV_input/Municipality_hourly_lower_charging_power_bound_2050.csv
+EV/EV_input/Municipality_hourly_charging_power_2050.csv
+EV/EV_input/Municipality_daily_flexible_charging_energy_2050.csv

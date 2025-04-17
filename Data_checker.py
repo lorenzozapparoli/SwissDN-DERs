@@ -1,3 +1,27 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `Data_checker.py`, is designed to analyze and validate data related to Low Voltage (LV) and Medium Voltage (MV) grids, as well as Distributed Energy Resources (DERs) such as PV systems, heat pumps (HP), battery energy storage systems (BESS), and electric vehicles (EVs). It includes functionalities for data consistency checks, statistical analysis, and visualization of energy profiles and capacities across municipalities in Switzerland.
+
+The script processes data for various simulation years, computes load profiles, and generates visualizations such as maps and histograms. It also calculates correlations between different DER installations and validates data allocations.
+
+Usage:
+1. Ensure the required input files are available in the specified directories. In other words, run this script after having run all the other scripts in the project.
+2. Run the script to perform data analysis, generate visualizations, and save results.
+
+Dependencies:
+- pandas
+- numpy
+- matplotlib
+- geopandas
+- seaborn
+- tqdm
+- scipy
+"""
+
 import pandas as pd
 import os
 import numpy as np
@@ -13,6 +37,14 @@ from matplotlib import rcParams, font_manager
 
 class DataChecker:
     def __init__(self):
+        """
+        Initializes the `DataChecker` class.
+
+        Description:
+        - Sets up variables for data storage, simulation years, and file paths.
+        - Prepares the environment for data analysis and visualization.
+        """
+
         self.lv_basicload_shares_df = None
         self.lv_heat_pump_allocation_df = None
         self.lv_generation_df = None
@@ -44,6 +76,14 @@ class DataChecker:
         self.mv_to_BFS = None
 
     def load_data(self):
+        """
+        Loads data required for analysis.
+
+        Description:
+        - Reads input files for LV and MV grids, DERs, and municipality data.
+        - Prepares data for further processing and analysis.
+        """
+
         self.mv_to_BFS_path = 'Plotting_data/mv_grid_canton.csv'
         self.lv_basicload_shares_path = f'LV_basicload/LV_basicload_output/{self.simulation_year}/LV_basicload_shares.csv'
         self.lv_commercial_profiles_path = f'LV_basicload/LV_basicload_output/{self.simulation_year}/Commercial_profiles.csv'
@@ -67,33 +107,41 @@ class DataChecker:
         self.ev_energy_profiles_path = f'EV/EV_output/{self.simulation_year}/EV_energy_profiles_LV.csv'
         self.ev_flexible_energy_profiles_path = f'EV/EV_output/{self.simulation_year}/EV_flexible_energy_profiles_LV.csv'
         self.ev_power_profiles_path = f'EV/EV_output/{self.simulation_year}/EV_power_profiles_LV.csv'
-        # self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
+        self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
         self.mv_to_BFS = pd.read_csv(self.mv_to_BFS_path)
-        # self.lv_heat_pump_allocation_df = pd.read_csv(self.lv_hp_path)
-        # self.lv_generation_df = pd.read_csv(self.lv_generation_path)
-        # self.lv_p_installed_df = pd.read_csv(self.lv_p_installed_path)
-        # self.mv_generation_df = pd.read_csv(self.mv_generation_path)
-        # self.mv_p_installed_df = pd.read_csv(self.mv_p_installed_path)
-        # self.map_of_switzerland = gpd.read_file(self.map_of_switzerland_path)
-        # self.lv_std_df = pd.read_csv(self.lv_std_path)
-        # self.mv_std_df = pd.read_csv(self.mv_std_path)
-        # self.lv_hp_df = pd.read_csv(self.lv_hp_path)
-        # self.mv_hp_df = pd.read_csv(self.mv_hp_path)
-        # self.temperature_profiles_df = pd.read_csv(self.temperature_profiles_path)
-        # self.lv_bess_df = pd.read_csv(self.lv_bess_path)
-        # self.mv_bess_df = pd.read_csv(self.mv_bess_path)
-        # self.ev_allocation_df = pd.read_csv(self.ev_allocation_path)
-        # self.ev_energy_profiles_df = pd.read_csv(self.ev_energy_profiles_path)
-        # self.ev_flexible_energy_profiles_df = pd.read_csv(self.ev_flexible_energy_profiles_path)
-        # self.ev_power_profiles_df = pd.read_csv(self.ev_power_profiles_path)
-        # self.load_lv_grids('PV/LV')
-        # self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
-        # self.commercial_profiles_df = pd.read_csv(self.lv_commercial_profiles_path)
-        # self.residential_profiles_df = pd.read_csv(self.lv_residential_profiles_path)
+        self.lv_heat_pump_allocation_df = pd.read_csv(self.lv_hp_path)
+        self.lv_generation_df = pd.read_csv(self.lv_generation_path)
+        self.lv_p_installed_df = pd.read_csv(self.lv_p_installed_path)
+        self.mv_generation_df = pd.read_csv(self.mv_generation_path)
+        self.mv_p_installed_df = pd.read_csv(self.mv_p_installed_path)
+        self.map_of_switzerland = gpd.read_file(self.map_of_switzerland_path)
+        self.lv_std_df = pd.read_csv(self.lv_std_path)
+        self.mv_std_df = pd.read_csv(self.mv_std_path)
+        self.lv_hp_df = pd.read_csv(self.lv_hp_path)
+        self.mv_hp_df = pd.read_csv(self.mv_hp_path)
+        self.temperature_profiles_df = pd.read_csv(self.temperature_profiles_path)
+        self.lv_bess_df = pd.read_csv(self.lv_bess_path)
+        self.mv_bess_df = pd.read_csv(self.mv_bess_path)
+        self.ev_allocation_df = pd.read_csv(self.ev_allocation_path)
+        self.ev_energy_profiles_df = pd.read_csv(self.ev_energy_profiles_path)
+        self.ev_flexible_energy_profiles_df = pd.read_csv(self.ev_flexible_energy_profiles_path)
+        self.ev_power_profiles_df = pd.read_csv(self.ev_power_profiles_path)
+        self.load_lv_grids('Grids/LV')
+        self.lv_basicload_shares_df = pd.read_csv(self.lv_basicload_shares_path)
+        self.commercial_profiles_df = pd.read_csv(self.lv_commercial_profiles_path)
+        self.residential_profiles_df = pd.read_csv(self.lv_residential_profiles_path)
         self.mv_load_profile_df = pd.read_csv(self.mv_load_profile_path)
-        self.load_mv_grids('PV/MV')
+        self.load_mv_grids('Grids/MV')
 
     def check_lv_grid_consistency(self):
+        """
+        Checks consistency of LV grid data.
+
+        Description:
+        - Validates the structure and content of LV grid data.
+        - Ensures data integrity for further analysis.
+        """
+
         lv_basicload_grids = set(self.lv_basicload_shares_df['LV_grid'].unique())
         lv_heat_pump_grids = set(self.lv_heat_pump_allocation_df['LV_grid'].unique())
         lv_generation_grids = set(self.lv_generation_df['LV_grid'].unique())
@@ -110,6 +158,13 @@ class DataChecker:
             print("Grids missing in LV_generation.csv:", missing_in_generation)
 
     def compute_pv_power_and_generation(self):
+        """
+        Computes PV power and generation statistics.
+
+        Description:
+        - Analyzes PV data to calculate installed capacity and energy generation.
+        """
+
         # Compute total installed power
         total_lv_p_installed = self.lv_p_installed_df['P_installed (kWp)'].sum() / 1000  # Convert to MW
         total_mv_p_installed = self.mv_p_installed_df['P_installed (kWp)'].sum() / 1000  # Convert to MW
@@ -187,6 +242,13 @@ class DataChecker:
         print(f"Monthly PV generation saved to {output_file}")
 
     def plot_histograms(self):
+        """
+        Plots histograms for data visualization.
+
+        Description:
+        - Generates histograms for various datasets to analyze distributions.
+        """
+
         # Plot histogram of installed capacity per node for LV
         plt.figure(figsize=(12, 6))
         plt.subplot(1, 2, 1)
@@ -228,6 +290,13 @@ class DataChecker:
         plt.show()
 
     def check_installed_power_vs_peak_production(self):
+        """
+        Compares installed power with peak production.
+
+        Description:
+        - Validates the relationship between installed capacity and peak energy production.
+        """
+
         def check_peak(df_installed, df_generation, grid_col, osmid_col):
             installed_power = df_installed.set_index([grid_col, osmid_col])['P_installed (kWp)']
             peak_production = df_generation.set_index([grid_col, osmid_col]).iloc[:, 2:].max(axis=1)
@@ -247,6 +316,14 @@ class DataChecker:
             print("All MV nodes have installed power higher than peak production.")
 
     def plot_installed_capacity_per_municipality(self):
+        """
+        Plots installed PV capacity per municipality.
+
+        Description:
+        - Merges PV capacity data with municipality maps.
+        - Generates a map visualization of installed PV capacity.
+        """
+
         # Extract municipality codes and sum installed capacity
         self.lv_p_installed_df['municipality'] = self.lv_p_installed_df['LV_grid'].str.split('-').str[0]
 
@@ -316,6 +393,13 @@ class DataChecker:
         plt.show()
 
     def plot_cov_histogram(self):
+        """
+        Plots histograms of Coefficient of Variation (CoV).
+
+        Description:
+        - Computes and visualizes CoV for LV, MV, and rooftop PV systems.
+        """
+
         # Load additional data
         rooftop_pv_path = 'PV/PV_input/PV_data/rooftop_PV_CH_EPV_W_by_building.csv'
         rooftop_pv_std_path = 'PV/PV_input/PV_data/rooftop_PV_CH_EPV_W_std_by_building.csv'
@@ -369,6 +453,14 @@ class DataChecker:
         plt.show()
 
     def plot_yearly_generation_per_municipality(self):
+        """
+        Plots yearly PV generation per municipality.
+
+        Description:
+        - Aggregates yearly generation data for LV and MV grids.
+        - Visualizes the data on a map of Switzerland.
+        """
+
         # Extract municipality codes
         lv_yearly_production = pd.DataFrame()
         mv_yearly_production = pd.DataFrame()
@@ -430,6 +522,13 @@ class DataChecker:
         plt.show()
 
     def plot_average_equivalent_hours_per_municipality(self):
+        """
+        Plots average equivalent hours per municipality.
+
+        Description:
+        - Calculates and visualizes equivalent hours based on generation and installed capacity.
+        """
+
         # Extract municipality codes and add as the first column
         self.lv_generation_df.insert(0, 'municipality', self.lv_generation_df['LV_grid'].str.split('-').str[0])
         self.mv_generation_df.insert(0, 'municipality', self.mv_generation_df['MV_grid'].str.split('_').str[0])
@@ -498,6 +597,13 @@ class DataChecker:
         plt.show()
 
     def plot_hp_histograms(self):
+        """
+        Plots histograms for heat pump data.
+
+        Description:
+        - Visualizes distributions of heat pump parameters for LV and MV grids.
+        """
+
         # Plot histograms for LV heat pumps
         plt.figure(figsize=(12, 6))
         plt.subplot(2, 3, 1)
@@ -541,6 +647,14 @@ class DataChecker:
         print(f"Total installed power in MV networks: {total_mv_power:.2f} MW")
 
     def compute_hp_consumption(self, installation_share=1, efficiency_factor=1):
+        """
+        Computes heat pump energy consumption.
+
+        Description:
+        - Calculates hourly, monthly, and yearly consumption for LV and MV heat pumps.
+        - Saves results and generates visualizations.
+        """
+
         target_temp = 18  # Target internal temperature in Celsius
 
         # Randomly sample the dataframes based on installation_share
@@ -697,6 +811,14 @@ class DataChecker:
         plt.show()
 
     def compute_bess_statistics_and_plot(self):
+        """
+        Computes and visualizes BESS statistics.
+
+        Description:
+        - Analyzes installed power and capacity for LV and MV BESS.
+        - Generates histograms and maps for BESS data.
+        """
+
         # Compute total installed power and capacity for LV
         total_lv_power = self.lv_bess_df['Nominal_Power_kW'].sum() / 1000  # Convert to MW
         total_lv_capacity = self.lv_bess_df['Battery_Capacity_kWh'].sum() / 1000  # Convert to MWh
@@ -797,6 +919,14 @@ class DataChecker:
         plt.show()
 
     def analyze_ev_data(self):
+        """
+        Analyzes EV data and generates visualizations.
+
+        Description:
+        - Processes EV power profiles and flexible energy data.
+        - Visualizes EV consumption and flexible energy availability.
+        """
+
         # Plot base profile and upper/lower bounds
         base_profile = self.ev_power_profiles_df[self.ev_power_profiles_df['Type'] == 'Base'].iloc[:, 2:].sum()
         upper_bound = self.ev_power_profiles_df[self.ev_power_profiles_df['Type'] == 'Upper'].iloc[:, 2:].sum()
@@ -951,6 +1081,12 @@ class DataChecker:
         plt.show()
 
     def load_lv_grids(self, base_path):
+        """
+        Loads LV grid data.
+
+        Description:
+        - Reads and processes LV grid data from input files.
+        """
         file_path = 'Plotting_data/lv_grid_data.csv'
 
         # Check if the file already exists
@@ -982,6 +1118,13 @@ class DataChecker:
         self.lv_grid_data.to_csv('Plotting_data/lv_grid_data.csv', index=False)
 
     def load_mv_grids(self, base_path):
+        """
+        Loads MV grid data.
+
+        Description:
+        - Reads and processes MV grid data from input files.
+        """
+
         grid_data = []
         for file in os.listdir(base_path):
             if file.endswith("_nodes"):
@@ -1002,6 +1145,14 @@ class DataChecker:
         self.mv_grid_data.to_csv('Plotting_data/mv_grid_data.csv', index=False)
 
     def compute_lv_load_profiles(self, chunk_size=100000):
+        """
+        Computes LV load profiles.
+
+        Description:
+        - Merges LV grid data with demand shares.
+        - Calculates hourly, monthly, and yearly load profiles.
+        """
+
         # Merge lv_grid_data with lv_basicload_shares_df to get com_percentage and res_percentage
         merged_df = self.lv_grid_data.merge(self.lv_basicload_shares_df, on=['LV_grid', 'LV_osmid'])
 
@@ -1102,6 +1253,13 @@ class DataChecker:
         plt.show()
 
     def compute_mv_load_profiles(self):
+        """
+        Computes MV load profiles.
+
+        Description:
+        - Processes MV grid data to calculate load profiles.
+        """
+
         # Ensure the MV load profile is loaded
         if self.mv_load_profile_df is None or self.mv_grid_data.empty:
             raise ValueError("MV load profile or MV grid data is not loaded")
@@ -1171,8 +1329,15 @@ class DataChecker:
         print(f"Monthly MV consumption saved to {output_file}")
 
     def load_and_modify_pv_data(self, year):
+        """
+        Loads and modifies PV data.
+
+        Description:
+        - Processes PV data for a given year and saves modified files.
+        """
+
         base_path = f'PV/PV_output/{year}'
-        output_path = f'SwissPDG_DERs/01_PV/{year}'
+        output_path = f'SwissDN_DERs/01_PV/{year}'
         os.makedirs(output_path, exist_ok=True)
 
         files = ['LV_P_installed.csv', 'LV_generation.csv', 'LV_std.csv',
@@ -1198,8 +1363,15 @@ class DataChecker:
         print(f"Loaded and modified PV data for {year}")
 
     def load_and_modify_hp_data(self, year):
+        """
+        Loads and modifies heat pump data.
+
+        Description:
+        - Processes heat pump data for a given year and saves modified files.
+        """
+
         base_path = f'HP/HP_output/{year}'
-        output_path = f'SwissPDG_DERs/03_HP/{year}'
+        output_path = f'SwissDN_DERs/03_HP/{year}'
         os.makedirs(output_path, exist_ok=True)
 
         files = ['LV_heat_pump_allocation.csv', 'MV_heat_pump_allocation.csv', 'Temperature_profiles.csv']
@@ -1226,8 +1398,15 @@ class DataChecker:
         print(f"Loaded and modified HP data for {year}")
 
     def load_and_modify_bess_data(self, year):
+        """
+        Loads and modifies BESS data.
+
+        Description:
+        - Processes BESS data for a given year and saves modified files.
+        """
+
         base_path = f'BESS/Output/{year}'
-        output_path = f'SwissPDG_DERs/02_BESS/{year}'
+        output_path = f'SwissDN_DERs/02_BESS/{year}'
         os.makedirs(output_path, exist_ok=True)
 
         files = ['BESS_allocation_LV.csv', 'BESS_allocation_MV.csv']
@@ -1245,8 +1424,15 @@ class DataChecker:
         print(f"Loaded and modified BESS data for {year}")
 
     def load_and_modify_ev_data(self, year):
+        """
+        Loads and modifies EV data.
+
+        Description:
+        - Processes EV data for a given year and saves modified files.
+        """
+
         base_path = f'EV/EV_output/{year}'
-        output_path = f'SwissPDG_DERs/04_EV/{year}'
+        output_path = f'SwissDN_DERs/04_EV/{year}'
         os.makedirs(output_path, exist_ok=True)
 
         files = ['EV_allocation_LV.csv', 'EV_flexible_energy_profiles_LV.csv',
@@ -1277,9 +1463,24 @@ class DataChecker:
         print(f"Loaded and modified EV data for {year}")
 
     def load_and_modify_lv_load_data(self, year):
+        """
+        Loads and modifies LV load data.
+
+        Description:
+        - Processes LV load data for a given year and saves modified files.
+        """
+
+        municipalities_path = 'SwissDN_DERs/07_Complementary_data/Municipalities_2022_01_crs2056.geojson'
         base_path = f'LV_basicload/LV_basicload_output/{year}'
-        output_path = f'SwissPDG_DERs/05_Demand/{year}'
+        output_path = f'SwissDN_DERs/05_Demand/{year}'
         os.makedirs(output_path, exist_ok=True)
+
+        # Load and filter Swiss municipalities
+        municipalities = gpd.read_file(municipalities_path)
+        swiss_municipalities = municipalities[
+            (municipalities['ICC'] == 'CH') & (municipalities['EINWOHNERZ'] > 0)
+            ]
+        swiss_municipality_numbers = set(swiss_municipalities['BFS_NUMMER'].astype(int))
 
         files = ['LV_basicload_shares.csv', 'Commercial_profiles.csv', 'Residential_profiles.csv']
 
@@ -1298,6 +1499,7 @@ class DataChecker:
                 df = df.transpose()
                 df.columns = pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
                 df.rename_axis('BFS_municipality_code', inplace=True)
+                df = df[df.index.astype(int).isin(swiss_municipality_numbers)]  # Filter rows
                 if 'LV_osmid' in df.columns:
                     df['LV_osmid'] = df['LV_osmid'].astype(int)
                 if 'MV_osmid' in df.columns:
@@ -1307,8 +1509,15 @@ class DataChecker:
         print(f"Loaded and modified LV load data for {year}")
 
     def load_and_modify_mv_load_data(self, year):
+        """
+        Loads and modifies MV load data.
+
+        Description:
+        - Processes MV load data for a given year and saves modified files.
+        """
+
         base_path = f'MV_basicload/MV_basicload_output/{year}'
-        output_path = f'SwissPDG_DERs/05_Demand/{year}'
+        output_path = f'SwissDN_DERs/05_Demand/{year}'
         os.makedirs(output_path, exist_ok=True)
 
         file = 'MV_load_profile.csv'
@@ -1330,15 +1539,28 @@ class DataChecker:
         print(f"Loaded and modified MV load data for {year}")
 
     def create_output_directory(self):
+        """
+        Creates output directories for simulation years.
+
+        Description:
+        - Ensures the required directory structure exists for saving results.
+        """
         for year in self.simulation_years:
-            # self.load_and_modify_pv_data(year)
-            # self.load_and_modify_hp_data(year)
-            # self.load_and_modify_bess_data(year)
-            # self.load_and_modify_ev_data(year)
+            self.load_and_modify_pv_data(year)
+            self.load_and_modify_hp_data(year)
+            self.load_and_modify_bess_data(year)
+            self.load_and_modify_ev_data(year)
             self.load_and_modify_lv_load_data(year)
-            # self.load_and_modify_mv_load_data(year)
+            self.load_and_modify_mv_load_data(year)
 
     def calculate_correlation_coefficients(self):
+        """
+        Calculates correlation coefficients.
+
+        Description:
+        - Computes Pearson and Spearman correlations between DER installations.
+        - Saves results and generates heatmaps.
+        """
         # Load the geojson file
         nine_zones = gpd.read_file('Plotting_data/nine_zones.geojson')
         nine_zones['BFS_NUMMER'] = nine_zones['BFS_NUMMER'].astype(int)
@@ -1431,6 +1653,12 @@ class DataChecker:
             plt.show()
 
     def check_HP_buildings_allocation(self):
+        """
+        Checks heat pump building allocation.
+
+        Description:
+        - Validates the allocation of buildings to LV and MV grids for heat pumps.
+        """
 
         # File paths
         buildings_data_path = r'C:\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\HP\HP_input\Buildings_data\Buildings_data.csv'
@@ -1463,26 +1691,27 @@ class DataChecker:
         print(
             f"Percentage of EGIDs in gebaeude_batiment_edificio.csv present in combined Building_allocation (LV and MV): {percentage_in_building_allocation_combined:.2f}%")
 
+
 if __name__ == "__main__":
     checker = DataChecker()
     checker.simulation_year = 2030
-    # checker.create_output_directory()
+    checker.create_output_directory()
     checker.load_data()
-    # checker.calculate_correlation_coefficients()
-    # checker.compute_lv_load_profiles()
-    # checker.compute_mv_load_profiles()
-    # checker.compute_bess_statistics_and_plot()
-    # checker.analyze_ev_data()
-    # checker.compute_hp_consumption()
-    # checker.plot_hp_histograms()
-    # checker.compute_pv_power_and_generation()
-    # checker.check_installed_power_vs_peak_production()
-    # checker.plot_histograms()
-    # checker.plot_average_equivalent_hours_per_municipality()
-    # checker.plot_installed_capacity_per_municipality()
-    # checker.plot_yearly_generation_per_municipality()
-    # checker.check_installed_power_vs_peak_production()
-    # checker.plot_cov_histogram()
-    # checker.compute_pv_power_and_generation()
-    # checker.check_lv_grid_consistency()
-    # checker.check_HP_buildings_allocation()
+    checker.calculate_correlation_coefficients()
+    checker.compute_lv_load_profiles()
+    checker.compute_mv_load_profiles()
+    checker.compute_bess_statistics_and_plot()
+    checker.analyze_ev_data()
+    checker.compute_hp_consumption()
+    checker.plot_hp_histograms()
+    checker.compute_pv_power_and_generation()
+    checker.check_installed_power_vs_peak_production()
+    checker.plot_histograms()
+    checker.plot_average_equivalent_hours_per_municipality()
+    checker.plot_installed_capacity_per_municipality()
+    checker.plot_yearly_generation_per_municipality()
+    checker.check_installed_power_vs_peak_production()
+    checker.plot_cov_histogram()
+    checker.compute_pv_power_and_generation()
+    checker.check_lv_grid_consistency()
+    checker.check_HP_buildings_allocation()

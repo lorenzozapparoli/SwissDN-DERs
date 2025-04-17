@@ -125,16 +125,6 @@
 /LV_basicload/LV/Midlands-Urban/
 /LV_basicload/Concatenated_results/
 /LV_basicload/Old/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Jura-Rural/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Jura-Urban/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Alps-Urban/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Alps-Rural/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Alps-Periurban/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Jura-Periurban/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Midlands-Rural/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Midlands-Periurban/
-/LV_basicload/LV_basicload_input/Square_zones_dmd/Midlands-Urban/
-/LV_basicload/municipality_profiles/
 /LV_basicload/LV_basicload_output/results/
 /LV_basicload/LV_basicload_output/2050/Commercial_profiles.csv
 /LV_basicload/LV_basicload_output/2050/LV_basicload_shares.csv
@@ -148,7 +138,6 @@
 /HP/configuration_files/
 /HP/HP_input/Buildings_data/Building_split/
 /HP/HP_input/Buildings_data/Buildings data AG/
-/HP/HP_input/Buildings_data/Buildings data Switzerland/
 /HP/HP_input/Buildings_data/Builidngs_to_grid_Blazhe/
 /HP/HP_input/Buildings_data/Old/
 /HP/HP_input/Buildings_data/References/
@@ -157,11 +146,8 @@
 /HP/HP_input/Buildings_data/Buildings_data.csv
 /HP/HP_input/configuration_files/Multi Family House.xlsx
 /HP/HP_input/configuration_files/Populations.xlsx
-/HP/HP_input/configuration_files/RLC_parameters.xlsx
 /HP/HP_input/configuration_files/Single Family House.xlsx
 /HP/HP_input/Temperature_data/raw_data/
-/HP/HP_input/Temperature_data/station_locations.csv
-/HP/HP_input/Temperature_data/temperature_profiles.csv
 /HP/HP_input/temp_data_HP.json
 /HP/HP_input/temp_data_temperatures.json
 /HP/HP_output/2040/LV_heat_pump_allocation.csv
@@ -231,3 +217,22 @@
 /PV/PV_output/LV_P_installed.csv
 /PV/PV_output/LV_generation.csv
 /MV_basicload/Old/
+/HP/HP_input/Buildings_data/Buildings data Switzerland/wohnung_logement_abitazione.csv
+/HP/HP_input/Buildings_data/Buildings data Switzerland/buildings.geojson
+/HP/HP_input/Buildings_data/Buildings data Switzerland/data.sqlite
+/HP/HP_input/Buildings_data/Buildings data Switzerland/eingang-entree-entrata_specifications.pdf
+/HP/HP_input/Buildings_data/Buildings data Switzerland/eingang_entree_entrata.csv
+/HP/HP_input/Buildings_data/Buildings data Switzerland/entrances.geojson
+/HP/HP_input/Buildings_data/Buildings data Switzerland/gebaeude-batiment-edificio_specifications.pdf
+/HP/HP_input/Buildings_data/Buildings data Switzerland/gebaeude_batiment_edificio.csv
+/HP/HP_input/Buildings_data/Buildings data Switzerland/kodes_codes_codici.csv
+/HP/HP_input/Buildings_data/Buildings data Switzerland/license.pdf
+/HP/HP_input/Buildings_data/Buildings data Switzerland/readme.pdf
+/HP/HP_input/Buildings_data/Buildings data Switzerland/wohnung-logement-abitazione_specifications.pdf
+/LV_basicload/LV_basicload_input/Buildings_data/gebaeude_batiment_edificio.csv
+/LV_basicload/LV_basicload_output/municipality_profiles/
+/Grids/LV/
+/Grids/MV/
+/LV_basicload/LV/
+/PV/data_processing/
+/Old/

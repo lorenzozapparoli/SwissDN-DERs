@@ -1,3 +1,29 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `HP_allocation_MV.py`, is designed to allocate buildings from the Swiss building registry to Medium Voltage (MV) grids. The allocation is based on proximity to MV grid nodes and uses convex hulls and Voronoi partitioning to assign buildings to grids. The script processes data for multiple MV grids in parallel using MPI, ensuring efficient handling of large datasets.
+
+The script identifies buildings within the convex hull of MV nodes, assigns them to the closest grid node, and calculates distances. For grids with fewer than three nodes, a simpler proximity-based allocation is used. The results are saved as a CSV file containing the building-to-grid assignments.
+
+Usage:
+1. Ensure the required input files (building registry, MV grid node data, and MV grid identifiers) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output file will be saved in the `HP/HP_input/Buildings_data` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- shapely
+- scipy.spatial.ConvexHull
+- geovoronoi
+- mpi4py
+- json
+"""
+
 # this is the python script for allocating heat pumps to MV loads
 import numpy as np
 import pandas as pd
@@ -12,12 +38,14 @@ import warnings
 from mpi4py import MPI
 warnings.filterwarnings('ignore')
 
+
 class HP():
     def __init__(self):
         self.BUFFER_DISTANCE = 3000
         self.script_path = os.path.dirname(os.path.abspath(__file__))
         self.data_path = os.path.join(self.script_path, 'HP_input', 'Buildings_data')
-        self.grid_path = 'PV/MV'
+        self.base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.grid_path = os.path.join(base_path, 'Grids', 'MV')
         self.MV_id = dict()
         self.id = str
         self.save_path = os.path.join(self.script_path, 'HP_output', 'HP_allocation_MV')
@@ -35,17 +63,15 @@ class HP():
 
     def load_grid_data(self):
         # load mv and lv node and edge data
-        MV_path = 'PV/MV/'
-        mv_node_name = self.id+"_nodes"
-        mv_node_gpd=gpd.read_file(MV_path+mv_node_name)
+        mv_node_name = self.id + "_nodes"
+        mv_node_gpd = gpd.read_file(os.path.join(self.grid_path, mv_node_name))
         mv_node_gpd['osmid'] = mv_node_gpd['osmid'].astype(int)
         mv_node_gpd['consumers'] = mv_node_gpd['consumers'].astype(bool)
         mv_node_gpd['source'] = mv_node_gpd['source'].astype(bool)
-        mv_node_gpd.drop(mv_node_gpd[mv_node_gpd['el_dmd']==0].index, inplace=True)
+        mv_node_gpd.drop(mv_node_gpd[mv_node_gpd['el_dmd'] == 0].index, inplace=True)
         mv_node_gpd.reset_index(drop=True, inplace=True)
         print('Finish loading grid data {}.'.format(self.id)+" ("+str(list(self.MV_id).index(self.id)+1)+"/"+str(len(self.MV_id))+")")
         return mv_node_gpd
-
 
     def create_convex_hull(self,mv_node_gpd):
         # create convex full for the grids
@@ -97,6 +123,7 @@ class HP():
                     points_within_hull.at[j, 'MV_grid'] = self.id
         return points_within_hull
 
+
 def merge_update(building, building_part):
     cols_to_merge = ['EGID', 'MV_grid', 'MV_osmid']
     building = pd.merge(building, building_part[cols_to_merge], how='left', on='EGID',suffixes=('', '_updated'))
@@ -105,9 +132,14 @@ def merge_update(building, building_part):
     building = building.drop(columns=['MV_grid_updated', 'MV_osmid_updated'])
     return building
 
+
 if __name__ == "__main__":
     HP_instance = HP()
-    with open('PV/data_processing/list_test_id_MV.json', 'r') as f:
+    script_path = os.path.dirname(os.path.abspath(__file__))
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    dict_path = os.path.join(base_path, 'Grids', 'Additional_files')
+    save_path = os.path.join(script_path, 'HP_input', 'Buildings_data', 'Building_allocation_MV.csv')
+    with open(os.path.join(dict_path, 'list_test_id_MV.json'), 'r') as f:
         HP_instance.MV_id = json.load(f)
 
     buildings = HP_instance.load_building_data()
@@ -138,9 +170,5 @@ if __name__ == "__main__":
         final_buildings_save = final_buildings_save.drop_duplicates(subset='EGID', keep='first')
         final_buildings_save = final_buildings_save.groupby('EGID').apply(lambda x: x.sample(1)).reset_index(
             drop=True)
-        final_buildings_save.to_csv('HP/HP_input/Buildings_data/Building_allocation_MV.csv', index=False)
+        final_buildings_save.to_csv(save_path, index=False)
         print("MV data has been processed and saved.")
-
-
-
-

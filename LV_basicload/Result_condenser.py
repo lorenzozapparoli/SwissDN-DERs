@@ -1,20 +1,49 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `Result_condenser.py`, processes Low Voltage (LV) grid data to generate and save scaled electricity demand profiles and demand shares for residential and commercial categories. The script reads data from multiple LV grid files, aggregates the required information, and saves the results in specified output directories for the years 2030, 2040, and 2050.
+
+Usage:
+1. Ensure the required input files (LV grid data and municipality profiles) are available in the specified directories.
+2. Run the script to generate scaled profiles and demand shares.
+3. The output files will be saved in the `LV_basicload_output` directory.
+
+Dependencies:
+- pandas
+- geopandas
+- os
+"""
+
 import os
 import pandas as pd
 import geopandas as gpd
 
 
 def generate_profiles_shares():
-    # Define the path to the LV folder
+    """
+    Processes LV grid data to generate demand shares for residential and commercial categories.
 
-    lv_folder_path = os.path.join(os.getcwd(), 'LV')
+    Description:
+    - Iterates through LV grid folders and reads node data from GeoJSON files.
+    - Extracts residential and commercial demand percentages and associates them with grid nodes.
+    - Aggregates the data into a single DataFrame and saves it as a CSV file in the output directories for 2030, 2040, and 2050.
+    """
+
+    # Define the path to the LV folder
+    path = os.path.dirname(os.path.abspath(__file__))
+    base_path = os.path.dirname(path)
+    lv_grids_path = os.path.join(base_path, 'Grids', 'LV')
 
     # Initialize an empty list to store data from each file
     data_list = []
 
     # Iterate through all folders and files in the LV directory
-    for root, dirs, files in os.walk(lv_folder_path):
+    for root, dirs, files in os.walk(lv_grids_path):
         for dir in dirs:
-            folder_path = os.path.join(lv_folder_path, dir)
+            folder_path = os.path.join(lv_grids_path, dir)
             print(f"Processing folder: {folder_path}")
             for file in os.listdir(folder_path):
                 if file.endswith('_nodes'):
@@ -60,6 +89,15 @@ def generate_profiles_shares():
 
 
 def generate_profiles():
+    """
+    Scales residential and commercial demand profiles using a calibration factor.
+
+    Description:
+    - Reads residential and commercial profiles from CSV files.
+    - Applies a calibration factor to scale the profiles.
+    - Saves the scaled profiles to the output directories for 2030, 2040, and 2050.
+    """
+
     # Define the calibration factor
     calibration_factor = 0.73
 

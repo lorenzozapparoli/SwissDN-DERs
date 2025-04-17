@@ -1,0 +1,2 @@
+The scripts in this folder are used to find the basic load profile for the MV grids. Follow these steps to run the scripts:
+1) Run MV_basicload_allocation.py.

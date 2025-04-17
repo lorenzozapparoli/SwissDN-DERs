@@ -1,9 +1,52 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `BESS_allocator.py`, is designed to allocate Battery Energy Storage Systems (BESS) to Low Voltage (LV)
+and Medium Voltage (MV) grids based on the installed Photovoltaic (PV) capacity. The allocation process considers
+future scenarios for the years 2030, 2040, and 2050, with varying shares of PV installations equipped with batteries.
+
+The script reads input data for PV installations, calculates battery parameters (e.g., capacity, nominal power,
+charging/discharging efficiency), and generates output files containing the allocated BESS data for each grid.
+The allocation ensures continuity between years by considering previously allocated nodes.
+
+This work is part of a broader project at ETH Zurich to model and analyze Distributed Energy Resources (DERs)
+in Swiss distribution grids. The input data and methodology are described in the related publication.
+
+Usage:
+1. Ensure the required PV data is available in the specified directories.
+2. Run the script to generate BESS allocation results for 2030, 2040, and 2050.
+3. The output files will be saved in the corresponding `BESS/Output/` directories.
+
+Dependencies:
+- pandas
+- os
+
+"""
+
 import pandas as pd
 import os
 
 
+# Function to allocate batteries to LV and MV grids based on PV installations
 def allocate_batteries(year, pv_share_dict, previous_year_data=None, duration_hours=2.5, round_trip_efficiency=0.85):
-    # Define file paths
+    """
+    Allocates Battery Energy Storage Systems (BESS) to LV and MV grids based on PV installations.
+
+    Parameters:
+        year (int): The year for which the allocation is being performed (e.g., 2030, 2040, 2050).
+        pv_share_dict (dict): A dictionary containing the share of PV installations with batteries for each year.
+        previous_year_data (dict, optional): Data from the previous year's allocation to ensure continuity.
+        duration_hours (float): The duration (in hours) for which the battery can provide power.
+        round_trip_efficiency (float): The round-trip efficiency of the battery.
+
+    Returns:
+        dict: A dictionary containing the sampled LV and MV data with battery allocations.
+    """
+
+    # Define file paths for input and output data
     base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     lv_input_path = os.path.join(base_path, f'PV\\PV_output\\{year}\\LV_P_installed.csv')
     mv_input_path = os.path.join(base_path, f'PV\\PV_output\\{year}\\MV_P_installed.csv')
@@ -43,6 +86,16 @@ def allocate_batteries(year, pv_share_dict, previous_year_data=None, duration_ho
 
     # Calculate battery parameters
     def calculate_battery_parameters(df):
+        """
+        Calculates battery parameters such as capacity, nominal power, and efficiencies.
+
+        Parameters:
+            df (DataFrame): The input DataFrame containing PV installation data.
+
+        Returns:
+            DataFrame: The updated DataFrame with battery parameters.
+        """
+
         df['Battery_Capacity_kWh'] = df['P_installed (kWp)'] * duration_hours
         df['Nominal_Power_kW'] = df['P_installed (kWp)']
         df['Charging_Efficiency'] = round_trip_efficiency ** 0.5
@@ -70,14 +123,16 @@ def allocate_batteries(year, pv_share_dict, previous_year_data=None, duration_ho
     return {'LV': lv_sampled, 'MV': mv_sampled}
 
 
-# Example usage
-pv_share_dict = {
-    2030: 0.14 + (0.7 - 0.14) * (2030 - 2021) / (2050 - 2021),
-    2040: 0.14 + (0.7 - 0.14) * (2040 - 2021) / (2050 - 2021),
-    2050: 0.7
-}
+# Example usage of the script
+if __name__ == "__main__":
+    pv_shares_dict = {
+        2030: 0.14 + (0.7 - 0.14) * (2030 - 2021) / (2050 - 2021),
+        2040: 0.14 + (0.7 - 0.14) * (2040 - 2021) / (2050 - 2021),
+        2050: 0.7
+    }
 
-data_2030 = allocate_batteries(2030, pv_share_dict)
-data_2040 = allocate_batteries(2040, pv_share_dict, previous_year_data=data_2030)
-data_2050 = allocate_batteries(2050, pv_share_dict, previous_year_data=data_2040)
-print('done')
+    data_2030 = allocate_batteries(2030, pv_shares_dict)
+    data_2040 = allocate_batteries(2040, pv_shares_dict, previous_year_data=data_2030)
+    data_2050 = allocate_batteries(2050, pv_shares_dict, previous_year_data=data_2040)
+
+    print('Battery allocation process completed for all years.')

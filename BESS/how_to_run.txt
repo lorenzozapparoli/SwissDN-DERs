@@ -1,0 +1,4 @@
+This folder contains the scrit BESS_allocator.py, which performs the BESS allocation and creates the scenarios for 2030,
+2040 and 2050. Instructions to run the script are given below.
+1) Make sure that the PV data have been created and are in the folder SwissDN_DERs/03_PV/2030, SwissDN_DERs/03_PV/2040 and SwissDN_DERs/03_PV/2050.
+2) Run the script BESS_allocator.py. The script will create the BESS allocation for 2030, 2040 and 2050 in the folders SwissDN_DERs/05_BESS/2030, SwissDN_DERs/05_BESS/2040 and SwissDN_DERs/05_BESS/2050.

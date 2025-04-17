@@ -1,0 +1,5 @@
+The scripts in this folder are used to run the basic load for the LV grids. Follow these steps to run the scripts:
+1) Download the building data from the swiss registry of buildings (from https://www.housing-stat.ch/de/madd/public.html), and place the file gebaeude_batiment_edificio.csv in the folder LV_basicload/LV_input/Buildings_data.
+2) Run Municipality_profile_generator.py: This script will generate the municipality profiles for the demand. It populates the folder LV_basicload/municipality_profiles with commercial_profiles.csv and residential_profiles.csv. The script uses the building data from LV_input/Buildings_data/gebauede_batiment_edificio.csv and the configuration files in LV_basicload/configuration_files.
+3) Run LV_basicload_allocation.py: This script will allocate the commercial and residential demand shares of the LV grid. It uses MPI for parallel computing, and adds a field in the LV grids nodes geojson files with the demand shares.
+4) Run Result_condenser.py: This script will condense the results of the LV_basicload_allocation.py script. It creates the folder LV_basicload/LV_output with the final results.

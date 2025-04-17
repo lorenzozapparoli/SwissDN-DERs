@@ -1,6 +1,7 @@
 Run sequence:
-Raw_data_processor_parallelized.py
-HP_building_split.py
-HP_allocation_LV.py
-HP_allocation_MV.py
-Final_results_generator.py
+1) Download the building data from the swiss registry of buildings (from https://www.housing-stat.ch/de/madd/public.html), and place the file gebaeude_batiment_edificio.csv in the folder HP/HP_input/Buildings_data/Buildings data Switzerland.
+2) Run raw_data_processor_parallelized.py with MPI to process the building data. This will create the file Buildings_data.csv in the folder HP/HP_input/Buildings_data.
+3) Run HP_building_split.py: This scrit will split the buildings in municipalities for more efficient node allocation. Make sure to have already downloaded the grids in the Grids/LV folder available. It uses MPI for parallel computing, and creates the folder HP/HP_input/Buildings_data/Building_split.
+4) Run HP_allocation_LV.py: This script will allocate the buildings to the nodes of the LV grid. It uses MPI for parallel computing, and creates the file HP/HP_input/Buildings_data/Building_allocation_LV.csv.
+5) HP_allocation_MV.py: This script will allocate the buildings to the nodes of the MV grid. It uses MPI for parallel computing, and creates the file HP/HP_input/Buildings_data/Building_allocation_MV.csv.
+6) Final_results_generator.py: This script will generate the final results for the buildings and populate the folder HP/HP_output.

@@ -1,0 +1,9 @@
+This folder contains the script EV_allocator.py, which performs the EV allocation and creates the scenarios for 2030,
+2040 and 2050. Instructions to run the script are given below.
+1) Make sure that the EV input data required for the allocation and scenarios are in the specified path. In particular, download these files form the Zenodo repository https://doi.org/10.5281/zenodo.15194721:
+    Municipality_daily_flexible_charging_energy_2050.csv
+    Municipality_hourly_charging_power_2050.csv
+    Municipality_hourly_lower_charging_power_bound_2050.csv
+    Municipality_hourly_upper_charging_power_bound_2050.csv
+2) Make sure that the Grids folder is populated with the LV grids.
+3) Run the script EV_allocator.py. The script will create the EV allocation for 2030, 2040 and 2050 in the folders SwissDN_DERs/EV/EV_output/2030, SwissDN_DERs/EV/EV_output/2040 and SwissDN_DERs/EV/EV_output/2050.

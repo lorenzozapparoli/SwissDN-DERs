@@ -1,3 +1,34 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `LV_basicload_allocation.py`, is designed to allocate the percentage of residential and commercial electricity demand to each node in a Low Voltage (LV) grid. The allocation is performed using Voronoi partitioning or proximity-based methods for grids with fewer than three nodes. The script processes multiple grids in parallel using MPI, ensuring efficient handling of large datasets.
+
+The script reads demand data, calculates residential and commercial percentages, and assigns these percentages to grid nodes. The results are saved in GeoJSON format, and Voronoi diagrams can be optionally saved as visualizations.
+
+Usage:
+1. Ensure the required input files (demand data and grid node files) are available in the specified directories.
+2. Run the script using MPI to process the grids in parallel.
+3. The output files will be saved in the `Grids/LV` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- shapely
+- scipy.spatial.Voronoi
+- geovoronoi
+- mpi4py
+- matplotlib
+- seaborn
+- tqdm
+- json
+- os
+- warnings
+"""
+
 import pandas as pd
 from mpi4py import MPI
 import numpy as np
@@ -13,23 +44,6 @@ from shapely.geometry import Polygon
 from geovoronoi import voronoi_regions_from_coords, points_to_coords
 import tqdm
 warnings.filterwarnings('ignore')
-
-'''
-This class is used to allocate the percentage of commercial and residential load to each node in the grid
-save_id() function is used to save the grid ids in a json file
-import_demand() function is used to import the demand data from the geojson file
-concat_all_grids() function is used to concatenate all the nodes and edges of the grid
-voronoi() function is used to do the voronoi partitioning and assign the residential and commercial percentages to the nodes
-save_allocation() function is used to save the allocation for each grid
-profile_generation() function is used to generate the profiles for each building in the municipality
-Input:
-x_el_dmd.geojson: the demand data of the grid
-x_nodes.geojson: the nodes of the grid
-
-Output:
-x_nodes.geojson: the nodes of the grid with the residential and commercial percentages
-x_voronoi.png: the voronoi diagram of the grid
-'''
 plt.rcParams.update({
     'font.size': 10,            # Base font size for the plot
     'font.family': 'Times New Roman',  # Font style (IEEE recommends Times New Roman)
@@ -40,7 +54,7 @@ plt.rcParams.update({
     'ytick.labelsize': 10,      # Font size for y-axis tick labels
     'lines.linewidth': 1.0,    # Line width for plot lines
     'lines.markersize': 4,     # Marker size
-    'figure.figsize': [3.5, 2.5], # Size of the figure (width x height) in inches
+    'figure.figsize': [3.5, 2.5],  # Size of the figure (width x height) in inches
     'savefig.dpi': 300,        # Resolution of the output figure
     'legend.loc': 'best',      # Location of the legend
     'legend.frameon': False,   # Remove the box frame around legends
@@ -48,17 +62,42 @@ plt.rcParams.update({
     'ps.fonttype': 42
 })
 
+
 class load_allocation:
     def __init__(self):
+        """
+        Initializes the `load_allocation` class.
+
+        Description:
+        - Sets up paths for input and output directories.
+        - Initializes variables for grid names, IDs, and building data.
+        """
         self.grids_name = str
         self.grid_ids = list
         self.grid_dict = dict
         self.buildings = gpd.GeoDataFrame()
         self.path = os.path.dirname(os.path.abspath(__file__))
+        self.base_path = os.path.dirname(self.path)
+        self.lv_grids_path = os.path.join(self.base_path, 'Grids', 'LV')
+        self.dict_path = os.path.join(self.base_path, 'Grids', 'Additional_files')
         self.input_path = os.path.join(self.path, 'LV_basicload_input')
         self.output_path = os.path.join(self.path, 'LV_basicload_output')
                 
     def create_dict(self,save_dict=False):
+        """
+        Creates a dictionary mapping grid files to their corresponding folders.
+
+        Args:
+            save_dict (bool): Whether to save the dictionary as a JSON file.
+
+        Returns:
+            dict: Dictionary mapping grid file names to folder names.
+
+        Description:
+        - Iterates through the input directory to map grid files to folders.
+        - Optionally saves the dictionary to a JSON file.
+        """
+
         path = self.input_path+'\\Square_zones_dmd\\'
         list_folder = os.listdir(path)
         dict_folder = {}
@@ -71,17 +110,38 @@ class load_allocation:
                 # sort the dictionary by the keys
                 dict_folder = dict(sorted(dict_folder.items()))
         if save_dict:
-            with open(self.output_path+'\\municipality_profiles\\dict_folder.json', 'w') as f:
+            with open(os.path.join(self.dict_path, 'dict_folder.json'), 'w') as f:
                 json.dump(dict_folder, f)
         return dict_folder
 
     def save_id(self):
-        path = 'LV\\'+self.grid_dict[self.grids_name]+'\\'
+        """
+        Saves the grid IDs for the current grid.
+
+        Returns:
+            list: List of unique grid IDs.
+
+        Description:
+        - Extracts grid IDs from the file names in the grid directory.
+        """
+
+        path = os.path.join(self.lv_grids_path, self.grid_dict[self.grids_name])
         grid_ids = list(set([str(f.split('.')[0][:-6]) for f in os.listdir(path) if f.startswith(self.grids_name+'-')]))
         self.grid_ids = grid_ids
         return grid_ids
 
     def import_demand(self):
+        """
+        Imports and preprocesses electricity demand data.
+
+        Returns:
+            GeoDataFrame: GeoDataFrame containing demand data with residential and commercial percentages.
+
+        Description:
+        - Reads demand data from a GeoJSON file.
+        - Calculates residential and commercial percentages for each demand point.
+        """
+
         el_dmd_name = self.input_path+'\\Square_zones_dmd\\'+self.grid_dict[self.grids_name]+'\\'+self.grids_name+'_el_dmd.geojson'
         el_dmd = gpd.read_file(el_dmd_name)
         el_dmd['residential_percentage'] = el_dmd['residential']/(el_dmd['residential']+el_dmd['commercial'])
@@ -91,6 +151,16 @@ class load_allocation:
         return el_dmd
 
     def concat_all_grids(self):
+        """
+        Concatenates all nodes and edges of the grids.
+
+        Returns:
+            Tuple: GeoDataFrames for concatenated nodes and edges.
+
+        Description:
+        - Reads and combines node and edge data for all grids.
+        """
+
         grid_ids = self.grid_ids
         node_total = gpd.GeoDataFrame()
         edge_total = gpd.GeoDataFrame()
@@ -101,16 +171,31 @@ class load_allocation:
             node_id = i+"_nodes"
             edge_id = i+"_edges"
             try:
-                edge = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+edge_id)
+                edge = gpd.read_file(os.path.join(self.lv_grids_path, self.grid_dict[self.grids_name], edge_id))
                 edge_total = pd.concat([edge_total, edge], ignore_index=True)
             except:
                 print("Error in reading the edge file "+edge_id)
-            node = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+node_id)
+            node = gpd.read_file(os.path.join(self.lv_grids_path, self.grid_dict[self.grids_name], node_id))
             node_total = pd.concat([node_total, node], ignore_index=True)
 
         return node_total, edge_total
 
     def voronoi(self, save_plot=False):
+        """
+        Performs Voronoi partitioning and assigns demand percentages to grid nodes.
+
+        Args:
+            save_plot (bool): Whether to save the Voronoi diagram as a PNG file.
+
+        Returns:
+            GeoDataFrame: GeoDataFrame of nodes with assigned residential and commercial percentages.
+
+        Description:
+        - Creates a Voronoi diagram based on demand points.
+        - Assigns residential and commercial percentages to nodes based on Voronoi regions.
+        - Optionally saves the Voronoi diagram as a visualization.
+        """
+
         el_dmd = self.import_demand()
         node_total, edge_total = self.concat_all_grids()
         coords = points_to_coords(el_dmd.geometry)
@@ -189,6 +274,16 @@ class load_allocation:
         return node_total
 
     def allocation_for_2nodes(self):
+        """
+        Allocates demand percentages to nodes for grids with two or fewer nodes.
+
+        Returns:
+            GeoDataFrame: GeoDataFrame of nodes with assigned residential and commercial percentages.
+
+        Description:
+        - Assigns demand percentages to nodes based on proximity to demand points.
+        """
+
         el_dmd = self.import_demand()
         node_total, edge_total = self.concat_all_grids()
         for j in range(len(node_total)):
@@ -204,6 +299,17 @@ class load_allocation:
         return node_total
 
     def save_allocation(self,save_plot=False):
+        """
+        Saves the allocation results for each grid.
+
+        Args:
+            save_plot (bool): Whether to save the Voronoi diagram as a PNG file.
+
+        Description:
+        - Performs Voronoi partitioning or proximity-based allocation.
+        - Saves the updated node data to GeoJSON files.
+        """
+
         if len(self.grid_ids) > 2:
             node_total = self.voronoi(save_plot=save_plot)
         else:
@@ -212,7 +318,7 @@ class load_allocation:
         for iter, i in enumerate(grid_ids):
             n = len(grid_ids)
             node_id = i+"_nodes"
-            node = gpd.read_file('LV\\'+self.grid_dict[self.grids_name]+'\\'+node_id)
+            node = gpd.read_file(os.path.join(self.lv_grids_path, self.grid_dict[self.grids_name], node_id))
             node['res_percentage'] = -1
             node['com_percentage'] = -1
             for j in range(len(node)):
@@ -220,51 +326,21 @@ class load_allocation:
                 index_node = node_total[node_total['x']==node.loc[j,'x']][node_total['y']==node.loc[j,'y']].index
                 node.loc[j,'res_percentage'] = node_total.loc[index_node,'res_percentage'].values[0]
                 node.loc[j,'com_percentage'] = node_total.loc[index_node,'com_percentage'].values[0]
-            node.to_file('LV\\/'+self.grid_dict[self.grids_name]+'\\'+node_id, driver='GeoJSON')
-            # print("Successfully saved the allocation for grid "+i+" ("+str(iter+1)+"\\"+str(n)+")")
+            node.to_file(os.path.join(self.lv_grids_path, self.grid_dict[self.grids_name], node_id), driver='GeoJSON')
 
-
-    def transform_from_pkl(self):
-        path = 'Synthetic_networks\\Demand_calculator\\municipality_normalized_profiles.pkl'
-        profiles = pd.read_pickle(path)
-        keys = profiles.keys()
-        commercial = pd.DataFrame()
-        residential = pd.DataFrame()
-        error=[]
-        # columns is keys
-        for key in keys:
-            if 'commercial' not in profiles[key].keys():
-                profiles[key]['commercial'] = np.zeros(8760)
-            elif 'residential' not in profiles[key].keys():
-                profiles[key]['residential'] = np.zeros(8760)
-            try:
-                commercial[key] = profiles[key]['commercial']
-                residential[key] = profiles[key]['residential']
-            except:
-                error.append(key)
-                print(key)
-                continue
-        commercial.to_csv('Synthetic_networks\\Demand_calculator\\commercial_profiles.csv', index=False)
-        residential.to_csv('Synthetic_networks\\Demand_calculator\\residential_profiles.csv', index=False)
-
-# if __name__ == "__main__":
-#     la = load_allocation()
-#     with open(la.output_path+'\\municipality_profiles\\dict_folder.json') as f:
-#         dict_folder = json.load(f)
-#     la.grid_dict = dict_folder
-#     keys = list(dict_folder.keys())
-#     # print(len(keys))
-#     for key in keys[0:-1]:
-#         len_dict = len(dict_folder)
-#         print("Processing grid "+key+" ("+str(list(dict_folder.keys()).index(key)+1)+"\\"+str(len_dict)+")")
-#         la.grids_name = key
-#         la.save_id()
-#         save_plot = True
-#         la.save_allocation(save_plot=save_plot)
 
 if __name__ == "__main__":
+    """
+    Main execution block.
+
+    Description:
+    - Initializes MPI and distributes grids among processes.
+    - Processes each grid to allocate demand percentages to nodes.
+    - Saves the results in GeoJSON format.
+    """
+
     la = load_allocation()
-    with open(la.output_path+'\\municipality_profiles\\dict_folder.json') as f:
+    with open(os.path.join(la.dict_path, 'dict_folder.json')) as f:
         dict_folder = json.load(f)
     la.grid_dict = dict_folder
     keys = list(dict_folder.keys())
@@ -283,7 +359,7 @@ if __name__ == "__main__":
         print(f"Processing grid {key} ({keys.index(key)+1}\\{len_dict}) on rank {rank}")
         la.grids_name = key
         la.save_id()
-        save_plot = True
+        save_plot = False
         la.save_allocation(save_plot=save_plot)
 
     # Finalize MPI

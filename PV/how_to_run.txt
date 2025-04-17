@@ -1,5 +1,7 @@
-Run the script in this order
-PV_building_split.py
-PV_allocation_LV.py
-PV_allocation_MV.py
-Final_results_generator.py
+The scripts in this folder are sued to allocate PV to the LV and MV grids. Follow these steps to run the scripts:
+1) Download the PV data form https://doi.org/10.5281/zenodo.3609832, and place the files rooftop_PV_CH_annual_by_building.csv, rooftop_PV_CH_EPV_W_by_building.csv, rooftop_PV_CH_EPV_W_std_by_building.csv, and rooftop_PV_CH_Gt_W_m2_by_building.csv in the folder PV_input/PV_data.
+2) Make sure to have the LV and MV grids in the Grids folder.
+3) Run PV_building_split.py, this script will split the PV data by municipality to speed the subsequent allocation process. It will create the folder PV_input/PV_data_split with the split files.
+4) Run PV_allocation_LV.py, this script will allocate the PV data to the LV grids.
+5) Run PV_allocation_MV.py, this script will allocate the PV data to the MV grids.
+6) Run Final_results_generator.py, this script will condense the results of the PV_allocation_LV.py and PV_allocation_MV.py scripts. It populates the folder PV_output with the final results.

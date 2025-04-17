@@ -1,3 +1,27 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `HP_building_split.py`, is designed to split the buildings from the Swiss building registry into municipalities. The purpose of this splitting is to ease the processing of building data by dividing it into smaller, more manageable subsets based on geographical boundaries. The script uses convex hulls around grid nodes to identify buildings within each municipality and assigns them accordingly.
+
+The script leverages MPI for parallel processing, allowing multiple processes to handle different municipalities simultaneously. The results are saved as separate CSV files for each municipality in the `Building_split` directory.
+
+Usage:
+1. Ensure the required input files (building registry, grid node data, and municipality dictionary) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output files will be saved in the `HP_input/Buildings_sata/Building_split` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- shapely
+- mpi4py
+- scipy.spatial.ConvexHull
+"""
+
 import os
 import json
 import numpy as np
@@ -5,16 +29,16 @@ import pandas as pd
 import geopandas as gpd
 from scipy.spatial import ConvexHull
 from shapely.geometry import Polygon
-from shapely.geometry import MultiPoint
 from mpi4py import MPI
 
 # Constants and paths
 BUFFER_DISTANCE = 100
 script_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_path, 'HP_input','Buildings_data')
+data_path = os.path.join(script_path, 'HP_input', 'Buildings_data')
 building_split_path = os.path.join(data_path, 'Building_split')
-grid_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\LV'
-dict_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\data_processing'
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+grid_path = os.path.join(base_path, 'Grids', 'LV')
+dict_path = os.path.join(base_path, 'Grids', 'Additional_files')
 
 # Ensure output directory exists
 os.makedirs(building_split_path, exist_ok=True)
@@ -43,7 +67,7 @@ len_dict = len(dict_folder)
 municipality_names = pd.read_csv(os.path.join(dict_path, 'dict_grid_municipality.csv'))
 municipality_names['municipality'] = municipality_names['municipality'].str.replace('/', '_')
 
-# Function definitions
+
 def create_convex_hull(lv_node_gpd):
     """
     Create a convex hull polygon around grid nodes, with a buffer.
@@ -55,6 +79,7 @@ def create_convex_hull(lv_node_gpd):
         buffered_polygon (Polygon): Buffered convex hull polygon.
         buffered_hull_points (ndarray): Coordinates of the buffered polygon exterior.
     """
+
     points = [point for point in lv_node_gpd.geometry]
 
     if len(points) < 3:
@@ -73,6 +98,8 @@ def create_convex_hull(lv_node_gpd):
     buffered_hull_points = np.array(buffered_polygon.exterior.coords)
 
     return buffered_polygon, buffered_hull_points
+
+
 def find_building_within_hull(building, hull):
     """
     Find buildings within a convex hull.
@@ -84,9 +111,11 @@ def find_building_within_hull(building, hull):
     Returns:
         points_within_hull (GeoDataFrame): Buildings within the hull.
     """
+
     points_within_hull = building.loc[flag == 0]
     points_within_hull = points_within_hull[points_within_hull.geometry.apply(hull.contains)]
     return points_within_hull
+
 
 # MPI initialization
 comm = MPI.COMM_WORLD

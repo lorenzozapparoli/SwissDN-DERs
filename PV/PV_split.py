@@ -1,18 +1,40 @@
-import pandas as pd 
-import numpy as np
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `PV_split.py`, is designed to split the buildings from the PV dataset into municipalities. The purpose of this splitting is to ease the processing of building data by dividing it into smaller, more manageable subsets based on geographical boundaries. The script uses convex hulls around grid nodes to identify buildings within each municipality and assigns them accordingly.
+
+The script leverages MPI for parallel processing, allowing multiple processes to handle different municipalities simultaneously. The results are saved as separate CSV files for each municipality in the `Building_split` directory.
+
+Usage:
+1. Ensure the required input files (pv data, grid node data, and municipality dictionary) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output files will be saved in the `PV_input/Building_split` directory.
+
+Dependencies:
+- pandas
+- geopandas
+- shapely
+- mpi4py
+- scipy.spatial.ConvexHull
+"""
+
+import pandas as pd
 import os
 import json
 import geopandas as gpd
 from shapely.geometry import Point
-import tqdm
 
 # load the geometry information of each municipality
 script_path = os.path.dirname(os.path.abspath(__file__))
 save_path = os.path.join(script_path, 'PV_input', 'PV_split')
 if not os.path.exists(save_path):
     os.makedirs(save_path)
-    
-dict_path = 'data_processing/'
+
+base_pth = os.path.dirname(script_path)
+dict_path = os.path.join(script_path, 'Grids', 'Additional_files')
 muni_geometry = gpd.read_file(dict_path+'municipality_boundary.geojson')
 muni_geometry['NAME'] = muni_geometry['NAME'].str.replace('/','_')
 

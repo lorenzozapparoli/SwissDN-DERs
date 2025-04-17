@@ -1,3 +1,30 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `PV_allocation_LV.py`, is designed to allocate photovoltaic (PV) systems to Low Voltage (LV) grids. The allocation is based on proximity to LV grid nodes and uses convex hulls and Voronoi partitioning to assign PV systems to grids. The script processes data for multiple municipalities in parallel using MPI, ensuring efficient handling of large datasets.
+
+The script identifies PV systems within the convex hull of LV nodes, assigns them to the closest grid node, and calculates distances. For grids with fewer than three nodes, a simpler proximity-based allocation is used. The results are saved as a CSV file containing the PV-to-grid assignments.
+
+Usage:
+1. Ensure the required input files (PV data, LV grid node data, and municipality identifiers) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output file will be saved in the `PV_input/PV_data` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- shapely
+- scipy.spatial.ConvexHull
+- geovoronoi
+- mpi4py
+- json
+- warnings
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -12,28 +39,12 @@ import warnings
 from mpi4py import MPI
 warnings.filterwarnings('ignore')
 
-
-# This script is adapted from the PV_potential_calculator.py script written by Lorenzo.
-'''Description of PV data:
-https://zenodo.org/records/3609833
-GWR_EGID: building ID
-XCOORD: x coordinate
-YCOORD: y coordinate
-EPV_kWh_a: annually PV potential kWh/year
-EPV_kWh_a_std uncertainty of annually PV potential kWh/year
-Gt_kWh_m2_a: tilted radiation on the surface of the building kWh/m2/year
-Gt_kWh_m2_a_std: uncertainty of tilted radiation on the surface of the building kWh/m2/year
-APV: available PV area m2
-APV_std: uncertainty of available PV area m2
-APV_ratio: ratio of APV to the total roof area
-EPV_kWh_m2roof_a: annual PV potential per m2 of suitable roof area
-'''
-
 BUFFER_DISTANCE = 50
 script_path = os.path.dirname(os.path.abspath(__file__))
 save_path = os.path.join(script_path, 'PV_input', 'PV_data')
-grid_path = 'LV/'
-dict_path = 'data_processing/'
+base_path = os.path.dirname(script_path)
+grid_path = os.path.join(base_path, 'Grids', 'LV')
+dict_path = os.path.join(base_path, 'Grids', 'Additional_files')
 data_path = os.path.join(script_path, 'PV_input', 'PV_split')
 with open(os.path.join(dict_path, 'dict_folder.json')) as f:
     dict_folder = json.load(f)
@@ -46,6 +57,21 @@ keys = sorted(keys)
 
         
 def PV_data_preprocessing(path):
+    """
+    Preprocesses PV data for allocation.
+
+    Args:
+        path (str): Path to the PV data file.
+
+    Returns:
+        GeoDataFrame: Processed GeoDataFrame containing PV data.
+
+    Description:
+    - Reads PV data from a CSV file.
+    - Converts coordinates to the appropriate CRS.
+    - Initializes columns for grid and node assignments.
+    """
+
     PV_data = pd.read_csv(path)
     PV_data['geometry'] = [Point(xy) for xy in zip(PV_data.XCOORD, PV_data.YCOORD)]
     PV_data = gpd.GeoDataFrame(PV_data, crs='EPSG:21781')
@@ -57,6 +83,21 @@ def PV_data_preprocessing(path):
     return PV_data
 
 def load_grid_data(grid_id, municipality):
+    """
+    Loads LV grid node data for a specific grid.
+
+    Args:
+        grid_id (str): Grid identifier.
+        municipality (str): Municipality identifier.
+
+    Returns:
+        GeoDataFrame: Processed GeoDataFrame containing LV node data.
+
+    Description:
+    - Reads LV node data from the corresponding file.
+    - Filters out nodes with zero electrical demand.
+    """
+
     lv_node_name = grid_id+"_nodes"
     lv_node_gpd=gpd.read_file(grid_path+dict_folder[municipality]+'/'+lv_node_name)
     try:
@@ -74,6 +115,22 @@ def load_grid_data(grid_id, municipality):
     return lv_node_gpd
     
 def create_convex_hull(lv_node_gpd):
+    """
+    Creates a convex hull around LV nodes and buffers it.
+
+    Args:
+        lv_node_gpd (GeoDataFrame): GeoDataFrame containing LV node geometries.
+
+    Returns:
+        Tuple:
+            Polygon: Buffered convex hull polygon.
+            np.ndarray: Exterior coordinates of the buffered convex hull.
+
+    Description:
+    - Calculates the convex hull for LV nodes.
+    - Buffers the convex hull to include nearby PV systems.
+    """
+
     # create convex hull for the grids 
     hull = ConvexHull([list(point) for point in lv_node_gpd.geometry.apply(lambda x: (x.x,x.y))])
     hull_points = [lv_node_gpd.geometry.apply(lambda x: (x.x,x.y))[i] for i in hull.vertices]
@@ -83,12 +140,42 @@ def create_convex_hull(lv_node_gpd):
     return buffered_polygon, buffered_hull_points
 
 def find_PV_within_hull(building, hull):
+    """
+    Finds PV systems located within a given convex hull.
+
+    Args:
+        building (GeoDataFrame): GeoDataFrame of PV building data.
+        hull (Polygon): Polygon object representing the convex hull.
+
+    Returns:
+        GeoDataFrame: Subset of PV systems within the convex hull.
+
+    Description:
+    - Filters PV systems based on their location within the convex hull.
+    """
+
     points_within_hull = building
     # points_within_hull = building[((building['LV_grid'] == '-1') | (building['LV_grid'] == -1))&(building['LV_osmid'] == -1)]
     points_within_hull = points_within_hull[points_within_hull.geometry.apply(lambda x: hull.contains(x))] 
     return points_within_hull
 
 def voronoi_allocation(PV_data, grid_id, lv_node_gpd):
+    """
+    Allocates PV systems to a grid using convex hull and Voronoi partitioning.
+
+    Args:
+        PV_data (GeoDataFrame): GeoDataFrame containing PV building data.
+        grid_id (str): Grid identifier.
+        lv_node_gpd (GeoDataFrame): GeoDataFrame containing LV node geometries.
+
+    Returns:
+        GeoDataFrame: Updated GeoDataFrame with PV assignments to LV grids.
+
+    Description:
+    - Creates a convex hull around LV nodes and identifies PV systems within it.
+    - Uses Voronoi partitioning to assign PV systems to the closest LV node.
+    """
+
     buffered_polygon, buffered_hull_points = create_convex_hull(lv_node_gpd)
     points_within_hull = find_PV_within_hull(PV_data, buffered_polygon)
     points_within_hull = points_within_hull.reset_index(drop=True)
@@ -118,6 +205,21 @@ def voronoi_allocation(PV_data, grid_id, lv_node_gpd):
 
 
 def find_PV_for_2_point(PV, lv_node_gpd):
+    """
+    Finds PV systems within a specified radius of LV nodes.
+
+    Args:
+        PV (GeoDataFrame): GeoDataFrame of PV building data.
+        lv_node_gpd (GeoDataFrame): GeoDataFrame containing LV node geometries.
+
+    Returns:
+        DataFrame: Subset of PV systems within the specified radius.
+
+    Description:
+    - Identifies PV systems within a 20m radius of LV nodes.
+    - Removes duplicates by keeping the closest PV system for each identifier.
+    """
+
     # find the buildings in the circle with radius 20m around 2 points
     PV_section = pd.DataFrame()
     for i in range(len(lv_node_gpd)):
@@ -129,7 +231,23 @@ def find_PV_for_2_point(PV, lv_node_gpd):
     PV_section = PV_section.loc[PV_section.groupby('SB_UUID')['distance'].idxmin()].reset_index(drop=True)
     return PV_section
 
+
 def allocation_for_2node(PV_data, grid_id, lv_node_gpd):
+    """
+    Allocates PV systems to a grid with two or fewer nodes.
+
+    Args:
+        PV_data (GeoDataFrame): GeoDataFrame containing PV building data.
+        grid_id (str): Grid identifier.
+        lv_node_gpd (GeoDataFrame): GeoDataFrame containing LV node geometries.
+
+    Returns:
+        GeoDataFrame: Updated GeoDataFrame with PV assignments to LV grids.
+
+    Description:
+    - Assigns PV systems to the closest LV node based on distance.
+    """
+
     points_within_hull = find_PV_for_2_point(PV_data, lv_node_gpd)
     if points_within_hull.empty:
         print('No PV found in the grid')
@@ -144,7 +262,23 @@ def allocation_for_2node(PV_data, grid_id, lv_node_gpd):
                 points_within_hull.at[idx, 'distance'] = distance
     return points_within_hull
 
+
 def merge_update(PV, PV_part):
+    """
+    Merges updated PV data back into the main PV GeoDataFrame.
+
+    Args:
+        PV (GeoDataFrame): Original GeoDataFrame of PV systems.
+        PV_part (GeoDataFrame): GeoDataFrame with updated PV assignments.
+
+    Returns:
+        GeoDataFrame: Merged GeoDataFrame with updated LV grid and osmid assignments.
+
+    Description:
+    - Updates PV assignments based on the closest distance.
+    - Ensures no duplicate assignments for the same PV system.
+    """
+
     cols_to_merge = ['SB_UUID', 'LV_grid', 'LV_osmid', 'distance']
     PV = pd.merge(PV, PV_part[cols_to_merge], how='left', on='SB_UUID', suffixes=('', '_updated'))
     PV['LV_grid'] = PV.apply(lambda row: row['LV_grid_updated'] if row['distance_updated'] < row['distance'] else row['LV_grid'], axis=1)
@@ -154,9 +288,22 @@ def merge_update(PV, PV_part):
     PV = PV.loc[PV.groupby('SB_UUID')['distance'].idxmin()]
     PV = PV.drop(columns=['LV_grid_updated', 'LV_osmid_updated', 'distance_updated'])
     return PV
-    
+
+
 def process_municipality(key):
-    """Process a single municipality."""
+    """
+    Processes PV allocation for a single municipality.
+
+    Args:
+        key (str): Municipality identifier.
+
+    Returns:
+        GeoDataFrame: Updated GeoDataFrame with PV assignments for the municipality.
+
+    Description:
+    - Loads PV and LV grid data for the municipality.
+    - Allocates PV systems to LV grids using Voronoi partitioning or proximity-based methods.
+    """
     try:
         path_municipality = os.path.join(data_path, f'{key}_PV.csv')
         buildings = PV_data_preprocessing(path_municipality)
@@ -188,7 +335,16 @@ def process_municipality(key):
         buildings = merge_update(buildings, building_partly_save)
     return buildings
 
+
 if __name__ == '__main__':
+    """
+    Main execution block.
+
+    Description:
+    - Initializes MPI and splits municipality keys among processes.
+    - Allocates PV systems to LV grids in parallel.
+    - Gathers results from all processes and saves the final allocation to a CSV file.
+    """
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()

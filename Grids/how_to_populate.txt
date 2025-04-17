@@ -1,0 +1,4 @@
+This folder must be populated before any scripts are run. In particular the following folders need to be created:
+1) LV: It contains the LV grid data
+2) MV: It contains the MV grid data
+Populate them by accessing the zenodo repository https://doi.org/10.5281/zenodo.15167588, and copying the folders LV and MV in the grids/geojson_data directory.

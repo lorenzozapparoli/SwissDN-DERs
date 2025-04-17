@@ -1,11 +1,29 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `Final_results_generator.py`, processes photovoltaic (PV) data to allocate PV systems to Low Voltage (LV) and Medium Voltage (MV) grids for the years 2030, 2040, and 2050. The allocation is based on predefined parameters such as PV penetration, nodal power limits, and building efficiency factors for each year. The script ensures that the allocation adheres to nodal power constraints and distinguishes between LV and MV grids.
+
+The script reads PV data, filters it based on specific criteria, and performs sampling to allocate PV systems. It processes LV and MV grids separately, grouping data by grid nodes and saving the results for each simulation year.
+
+Usage:
+1. Ensure the required input files (PV data and allocation files) are available in the `PV_input/PV_data` directory.
+2. Run the script to generate PV allocation results for LV and MV grids for 2030, 2040, and 2050.
+3. The output files will be saved in the `PV_output` directory under subfolders for each simulation year.
+
+Dependencies:
+- pandas
+- numpy
+- os
+- warnings
+"""
+
 import pandas as pd
 import numpy as np
 import os
 import warnings
-from sklearn.preprocessing import normalize
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-import tqdm
 warnings.filterwarnings("ignore")
 
 script_path = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +32,6 @@ deviation_ts = pd.read_csv(
     os.path.join(script_path, 'PV_input', 'PV_data', 'rooftop_PV_CH_EPV_W_std_by_building.csv'))
 irradiance_ts = pd.read_csv(
     os.path.join(script_path, 'PV_input', 'PV_data', 'rooftop_PV_CH_Gt_W_m2_by_building.csv'))
-
 # Scenarios data for 2030, 2040 and 2050 (https://nexus-e.org/eip-eth-collaboration-rethink-future-swiss-electricity-supply/)
 parameters_dict = {2030: {'PV_penetration': 9.41/34.64},
                    2040: {'PV_penetration': 15.69/34.64},
@@ -22,6 +39,20 @@ parameters_dict = {2030: {'PV_penetration': 9.41/34.64},
 
 
 def data_aggregate_LV(building_data_part):
+    """
+    Aggregates building data for LV grids.
+
+    Args:
+        building_data_part (DataFrame): DataFrame containing building data.
+
+    Returns:
+        DataFrame: Aggregated building data grouped by LV grid and osmid.
+
+    Description:
+    - Drops unnecessary columns and groups data by LV grid and osmid.
+    - Sums numerical columns for aggregation.
+    """
+
     building_copy = building_data_part.copy()
     building_copy = building_copy.drop(columns=['geometry', 'SB_UUID'])
 
@@ -35,6 +66,20 @@ def data_aggregate_LV(building_data_part):
 
 
 def data_aggregate_MV(building_data_part):
+    """
+    Aggregates building data for MV grids.
+
+    Args:
+        building_data_part (DataFrame): DataFrame containing building data.
+
+    Returns:
+        DataFrame: Aggregated building data grouped by MV grid and osmid.
+
+    Description:
+    - Drops unnecessary columns and groups data by MV grid and osmid.
+    - Sums numerical columns for aggregation.
+    """
+
     building_copy = building_data_part.copy()
     building_copy = building_copy.drop(columns=['geometry', 'SB_UUID'])
 
@@ -48,6 +93,19 @@ def data_aggregate_MV(building_data_part):
 
 
 def fill_missing_hour(data):
+    """
+    Fills missing hourly data in the time series.
+
+    Args:
+        data (DataFrame): DataFrame containing time series data.
+
+    Returns:
+        DataFrame: DataFrame with missing hours filled with zeros.
+
+    Description:
+    - Ensures all hours are present in the time series.
+    - Fills missing hours with zero values.
+    """
     df = data.copy()
     df.set_index('SB_UUID', inplace=True)
     df.columns = pd.to_datetime(df.columns)
@@ -61,6 +119,22 @@ def fill_missing_hour(data):
 
 
 def mapping(PV_building, df, type):
+    """
+    Maps grid and osmid information to the data.
+
+    Args:
+        PV_building (DataFrame): DataFrame containing PV building data.
+        df (DataFrame): DataFrame to map grid and osmid information.
+        type (str): Type of grid ('LV' or 'MV').
+
+    Returns:
+        DataFrame: Updated DataFrame with grid and osmid mappings.
+
+    Description:
+    - Maps grid and osmid columns from PV building data to the input DataFrame.
+    - Filters out rows with missing grid information.
+    """
+
     grid_dict = dict(zip(PV_building['SB_UUID'], PV_building[f'{type}_grid']))
     osmid_dict = dict(zip(PV_building['SB_UUID'], PV_building[f'{type}_osmid']))
     df[f'{type}_grid'] = df['SB_UUID'].map(grid_dict)
@@ -70,6 +144,23 @@ def mapping(PV_building, df, type):
 
 
 def area_calculation(id, PV_generation_data, irradiance_data, type):
+    """
+    Calculates the installed PV area and power.
+
+    Args:
+        id (str): Identifier for the data.
+        PV_generation_data (DataFrame): DataFrame containing PV generation data.
+        irradiance_data (DataFrame): DataFrame containing irradiance data.
+        type (str): Type of grid ('LV' or 'MV').
+
+    Returns:
+        DataFrame: DataFrame with calculated installed power (kWp).
+
+    Description:
+    - Calculates the PV area based on generation and irradiance data.
+    - Computes the installed power in kWp.
+    """
+
     osmid = PV_generation_data[f'{type}_osmid']
     grid = PV_generation_data[f'{type}_grid']
     P_data = pd.DataFrame(columns=[f'{type}_grid', f'{type}_osmid', 'P_installed (kWp)'])
@@ -94,6 +185,24 @@ def area_calculation(id, PV_generation_data, irradiance_data, type):
 
 
 def allocation(PV_building, df_time_series_avg, df_std_avg, df_ir, type):
+    """
+    Allocates PV generation and standard deviation to grids.
+
+    Args:
+        PV_building (DataFrame): DataFrame containing PV building data.
+        df_time_series_avg (DataFrame): Average time series data.
+        df_std_avg (DataFrame): Standard deviation data.
+        df_ir (DataFrame): Irradiance data.
+        type (str): Type of grid ('LV' or 'MV').
+
+    Returns:
+        Tuple: DataFrames for generation, standard deviation, and installed power.
+
+    Description:
+    - Aggregates time series, standard deviation, and irradiance data by grid.
+    - Calculates installed power for each grid.
+    """
+
     pv_time_series_part = df_time_series_avg
     pv_std_part = df_std_avg
     pv_ir_part = df_ir
@@ -116,23 +225,26 @@ def allocation(PV_building, df_time_series_avg, df_std_avg, df_ir, type):
     data3 = data3[columns_order]
 
     P_data = area_calculation(id, data2, data4, type)
-    # if type == 'MV':
-    #     save_path = script_path + f'/PV_output/PV_allocation_{type}'
-    # else:
-    #     save_path = script_path + f'/PV_output/PV_allocation_{type}/' + file_folder_lv[str(id)]
-    # if not os.path.exists(save_path):
-    #     os.makedirs(save_path)
-    # # create folder for each MV grid
-    # if not os.path.exists(save_path + '/' + str(id)):
-    #     os.makedirs(save_path + '/' + str(id))
-    # # save data2 and data3 as csv files, named by MV grid id+demand or std
-    # data2.to_csv(save_path + '/' + str(id) + '/' + str(id) + '_generation.csv')
-    # data3.to_pickle(save_path + '/' + str(id) + '/' + str(id) + '_std.csv')
-    # P_data.to_csv(save_path + '/' + str(id) + '/' + str(id) + '_P_installed.csv', index=False)
     return data2, data3, P_data
 
 
 def process_LV_allocation(previous_year_data=None, simulation_year=2030):
+    """
+    Processes PV allocation for LV grids.
+
+    Args:
+        previous_year_data (DataFrame, optional): Data from the previous year.
+        simulation_year (int): Year for the simulation (2030, 2040, or 2050).
+
+    Returns:
+        DataFrame: Sampled LV allocation data for the simulation year.
+
+    Description:
+    - Filters and samples LV allocation data based on PV penetration.
+    - Maps time series, standard deviation, and irradiance data to grids.
+    - Saves results for generation, standard deviation, and installed power.
+    """
+
     print('computing allocation for LV grids for year:', simulation_year)
 
     PV_penetration = parameters_dict[simulation_year]['PV_penetration']
@@ -177,7 +289,24 @@ def process_LV_allocation(previous_year_data=None, simulation_year=2030):
 
     return LV_sampled
 
+
 def process_MV_allocation(previous_year_data=None, simulation_year=2030):
+    """
+    Processes PV allocation for MV grids.
+
+    Args:
+        previous_year_data (DataFrame, optional): Data from the previous year.
+        simulation_year (int): Year for the simulation (2030, 2040, or 2050).
+
+    Returns:
+        DataFrame: Sampled MV allocation data for the simulation year.
+
+    Description:
+    - Filters and samples MV allocation data based on PV penetration.
+    - Maps time series, standard deviation, and irradiance data to grids.
+    - Saves results for generation, standard deviation, and installed power.
+    """
+
     print('computing allocation for MV grids for year:', simulation_year)
 
     PV_penetration = parameters_dict[simulation_year]['PV_penetration']
@@ -220,7 +349,16 @@ def process_MV_allocation(previous_year_data=None, simulation_year=2030):
 
     return MV_sampled
 
+
 if __name__ == '__main__':
+    """
+    Main execution block.
+
+    Description:
+    - Processes PV allocation for LV and MV grids for 2030, 2040, and 2050.
+    - Saves results for each simulation year in the `PV_output` directory.
+    """
+
     data_2030_LV = process_LV_allocation(simulation_year=2030)
     data_2040_LV = process_LV_allocation(previous_year_data=data_2030_LV, simulation_year=2040)
     data_2050_LV = process_LV_allocation(previous_year_data=data_2040_LV, simulation_year=2050)

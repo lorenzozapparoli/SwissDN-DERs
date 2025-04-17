@@ -1,3 +1,25 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `Final_results_generator.py`, processes building data to allocate heat pumps (HP) to Low Voltage (LV) and Medium Voltage (MV) grids for the years 2030, 2040, and 2050. The allocation is based on predefined parameters such as HP share, Coefficient of Performance (COP), and building efficiency factors for each year. The script ensures that the allocation adheres to nodal power limits and distinguishes between residential and commercial buildings.
+
+The script reads building data, filters it based on specific criteria, and performs sampling to allocate heat pumps. It processes LV and MV grids separately, grouping data by grid nodes and saving the results for each simulation year.
+
+Usage:
+1. Ensure the required input files (building data and allocation files) are available in the `HP_input/Buildings_data` directory.
+2. Run the script to generate heat pump allocation results for LV and MV grids for 2030, 2040, and 2050.
+3. The output files will be saved in the `HP_output` directory under subfolders for each simulation year.
+
+Dependencies:
+- pandas
+- numpy
+- os
+- warnings
+"""
+
 import pandas as pd
 import numpy as np
 import warnings
@@ -11,11 +33,6 @@ buildings_info = pd.read_csv(os.path.join(script_path, 'HP_input', 'Buildings_da
 parameters_dict = {2030: {'HP_share_commercial': 0.1394, 'HP_share_residential': 0.360, 'COP': 3.49, 'Building_efficiency_factor': 0.904066},
                    2040: {'HP_share_commercial': 0.2129, 'HP_share_residential': 0.520, 'COP': 3.79, 'Building_efficiency_factor': 0.784556},
                    2050: {'HP_share_commercial': 0.2830, 'HP_share_residential': 0.650, 'COP': 4.12, 'Building_efficiency_factor': 0.704088}}
-# simulation_year = 2050
-# HP_share_commercial = parameters_dict[simulation_year]['HP_share_commercial']
-# HP_share_residential = parameters_dict[simulation_year]['HP_share_residential']
-# HP_COP = parameters_dict[simulation_year]['COP']
-# HP_building_efficiency_factor = parameters_dict[simulation_year]['Building_efficiency_factor']
 
 
 def process_lv_allocation(previous_year_data=None, simulation_year=2030):
@@ -25,7 +42,7 @@ def process_lv_allocation(previous_year_data=None, simulation_year=2030):
     HP_share_residential = parameters_dict[simulation_year]['HP_share_residential']
     HP_COP = parameters_dict[simulation_year]['COP']
     HP_building_efficiency_factor = parameters_dict[simulation_year]['Building_efficiency_factor']
-    max_nodal_power = 100 # kW
+    max_nodal_power = 100  # kW
     # Read the CSV file
     builidngs_df = pd.read_csv(os.path.join(script_path, 'HP_input', 'Buildings_data', 'Buildings_data.csv'))
     df = pd.read_csv(os.path.join(script_path, 'HP_input', 'Buildings_data', 'Building_allocation_LV.csv'))
@@ -71,23 +88,14 @@ def process_lv_allocation(previous_year_data=None, simulation_year=2030):
         sampled_residential = residential_buildings.sample(frac=HP_share_residential, random_state=1)
         df_filtered = pd.concat([sampled_commercial, sampled_residential])
 
-    # # Sample the commercial and residential buildings
-    # commercial_buildings = df_filtered[df_filtered['Building_Type'] == 'Commercial']
-    # residential_buildings = df_filtered[df_filtered['Building_Type'] == 'Residential']
-    #
-    # sampled_commercial = commercial_buildings.sample(frac=HP_share_commercial, random_state=1)
-    # sampled_residential = residential_buildings.sample(frac=HP_share_residential, random_state=1)
-
-    # df_filtered = pd.concat([sampled_commercial, sampled_residential])
-
     # Drop unnecessary columns
     df_previous = df_filtered.copy()
     df_filtered = df_filtered.drop(columns=['EGID', 'GKODN', 'GKODE', 'GEBF', 'GAREA', 'ISHP', 'geometry', 'distance',
                                             'GKLAS', 'Building_Type'])
 
     # Convert PRT and HBLD to kW
-    df_filtered['PRT'] = df_filtered['PRT'] / 10 ** 3 * HP_building_efficiency_factor # Convert PRT to kW
-    df_filtered['HBLD'] = df_filtered['HBLD'] / 10 ** 3 * HP_building_efficiency_factor # Convert HBLD to kW/K
+    df_filtered['PRT'] = df_filtered['PRT'] / 10 ** 3 * HP_building_efficiency_factor  # Convert PRT to kW
+    df_filtered['HBLD'] = df_filtered['HBLD'] / 10 ** 3 * HP_building_efficiency_factor  # Convert HBLD to kW/K
 
     # Rename columns for clarity
     df_filtered.rename(columns={
@@ -125,7 +133,7 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
     HP_share_residential = parameters_dict[simulation_year]['HP_share_residential']
     HP_COP = parameters_dict[simulation_year]['COP']
     HP_building_efficiency_factor = parameters_dict[simulation_year]['Building_efficiency_factor']
-    max_nodal_power = 1000 # kW
+    max_nodal_power = 1000  # kW
     df = pd.read_csv(os.path.join(script_path, 'HP_input', 'Buildings_data', 'Building_allocation_MV.csv'))
 
     # Remove entries with PRT above the 95th percentile
@@ -180,8 +188,8 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
     df_filtered = df_filtered.drop(columns=['EGID', 'GKODN', 'GKODE', 'GEBF', 'GAREA', 'ISHP', 'geometry', 'GKLAS', 'Building_Type'])
 
     # Convert PRT and HBLD to kW
-    df_filtered['PRT'] = df_filtered['PRT'] / 10 ** 3 * HP_building_efficiency_factor # Convert PRT to kW
-    df_filtered['HBLD'] = df_filtered['HBLD'] / 10 ** 3 * HP_building_efficiency_factor # Convert HBLD to kW/K
+    df_filtered['PRT'] = df_filtered['PRT'] / 10 ** 3 * HP_building_efficiency_factor  # Convert PRT to kW
+    df_filtered['HBLD'] = df_filtered['HBLD'] / 10 ** 3 * HP_building_efficiency_factor  # Convert HBLD to kW/K
 
     # Rename columns for clarity
     df_filtered.rename(columns={

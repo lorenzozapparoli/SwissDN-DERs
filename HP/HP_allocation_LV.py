@@ -1,3 +1,29 @@
+"""
+Author: Lorenzo Zapparoli
+Institution: ETH Zurich
+Date: 15/03/2025
+
+Introduction:
+This script, `HP_allocation_LV.py`, is designed to allocate buildings from the Swiss building registry to Low Voltage (LV) grids. The allocation is based on proximity to LV grid nodes and uses convex hulls and Voronoi partitioning to assign buildings to grids. The script processes data for multiple municipalities in parallel using MPI, ensuring efficient handling of large datasets.
+
+The script identifies buildings within the convex hull of LV nodes, assigns them to the closest grid node, and calculates distances. For grids with fewer than three nodes, a simpler proximity-based allocation is used. The results are saved as a CSV file containing the building-to-grid assignments.
+
+Usage:
+1. Ensure the required input files (building registry, grid node data, and municipality dictionary) are available in the specified directories.
+2. Run the script using MPI to process the data in parallel.
+3. The output file Building_allocation_LV.csv will be saved in the `HP_input/Buildings_data` directory.
+
+Dependencies:
+- pandas
+- numpy
+- geopandas
+- shapely
+- mpi4py
+- scipy.spatial.ConvexHull
+- geovoronoi
+
+"""
+
 import numpy as np
 import pandas as pd
 import os
@@ -17,15 +43,17 @@ rank = comm.Get_rank()
 num_processors = comm.Get_size()
 
 script_path = os.path.dirname(os.path.abspath(__file__))
-data_path = os.path.join(script_path, 'HP_input','Buildings_data', 'Building_split')
-grid_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\LV'
-dict_path = 'C:\\Users\lzapparoli\PycharmProjects\SwissPDGs-TimeSeries\PV\data_processing'
-save_path = os.path.join(script_path,'HP_input', 'Buildings_data')
+data_path = os.path.join(script_path, 'HP_input', 'Buildings_data', 'Building_split')
+base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+grid_path = os.path.join(base_path, 'Grids', 'LV')
+dict_path = os.path.join(base_path, 'Grids', 'Additional_files')
+save_path = os.path.join(script_path, 'HP_input', 'Buildings_data')
 with open(os.path.join(dict_path, 'dict_folder.json')) as f:
     dict_folder = json.load(f)
 len_dict = len(dict_folder)
 keys = list(dict_folder.keys())
 BUFFER_DISTANCE = 50
+
 
 def load_grid_data(grid_id, municipality):
     """
@@ -38,6 +66,7 @@ def load_grid_data(grid_id, municipality):
         Returns:
             GeoDataFrame: Processed GeoDataFrame containing LV node data.
     """
+
     lv_node_name = grid_id+"_nodes"
     lv_node_gpd=gpd.read_file(os.path.join(grid_path, dict_folder[municipality], lv_node_name))
     try:
@@ -54,6 +83,7 @@ def load_grid_data(grid_id, municipality):
         lv_node_gpd.reset_index(drop=True, inplace=True)
     return lv_node_gpd
 
+
 def create_convex_hull(lv_node_gpd):
     """
     Create a convex hull around LV nodes and buffer it.
@@ -66,6 +96,7 @@ def create_convex_hull(lv_node_gpd):
             Polygon: Buffered convex hull polygon.
             np.ndarray: Exterior coordinates of the buffered convex hull.
     """
+
     # create convex hull for the grids 
     hull = ConvexHull([list(point) for point in lv_node_gpd.geometry.apply(lambda x: (x.x, x.y))])
     hull_points = [lv_node_gpd.geometry.apply(lambda x: (x.x, x.y))[i] for i in hull.vertices]
@@ -73,6 +104,7 @@ def create_convex_hull(lv_node_gpd):
     buffered_polygon = polygon.buffer(BUFFER_DISTANCE)
     buffered_hull_points = np.array(buffered_polygon.exterior.coords)
     return buffered_polygon, buffered_hull_points
+
 
 def find_building_within_hull(building, hull):
     """
@@ -85,11 +117,13 @@ def find_building_within_hull(building, hull):
     Returns:
         GeoDataFrame: Subset of buildings within the convex hull.
     """
+
     # Filter buildings that are not yet assigned to any LV grid
     points_within_hull = building
     # points_within_hull = building[((building['LV_grid'] == '-1') | (building['LV_grid'] == -1))&(building['LV_osmid'] == -1)]
     points_within_hull = points_within_hull[points_within_hull.geometry.apply(lambda x: hull.contains(x))]
     return points_within_hull
+
 
 def building_allocation(buildings, grid_id, lv_node_gpd):
     """
@@ -101,6 +135,7 @@ def building_allocation(buildings, grid_id, lv_node_gpd):
     Returns:
         GeoDataFrame: Updated GeoDataFrame with building assignments to LV grids.
     """
+
     buffered_polygon, buffered_hull_points = create_convex_hull(lv_node_gpd)
     points_within_hull = find_building_within_hull(buildings, buffered_polygon)
     points_within_hull = points_within_hull.reset_index(drop=True)
@@ -140,6 +175,7 @@ def find_building_for_2_point(building, lv_node_gpd):
     Returns:
         GeoDataFrame: Subset of buildings located within the 20-meter radius of any LV node.
     """
+
     buildings_section = pd.DataFrame()
     for i in range(len(lv_node_gpd)):
         point = lv_node_gpd.geometry.iloc[i]
@@ -149,6 +185,7 @@ def find_building_for_2_point(building, lv_node_gpd):
     # Remove duplicates by keeping the row with the lowest distance for each EGID
     buildings_section = buildings_section.loc[buildings_section.groupby('EGID')['distance'].idxmin()].reset_index(drop=True)
     return buildings_section
+
 
 def allocation_for_2node(building, grid_id, lv_node_gpd):
     """
@@ -162,6 +199,7 @@ def allocation_for_2node(building, grid_id, lv_node_gpd):
     Returns:
         GeoDataFrame: Updated GeoDataFrame with building assignments to LV grids and nodes.
     """
+
     # Find buildings within the radius of LV nodes
     points_within_hull = find_building_for_2_point(building, lv_node_gpd)
     if points_within_hull.empty:
@@ -177,6 +215,7 @@ def allocation_for_2node(building, grid_id, lv_node_gpd):
                 points_within_hull.at[idx, 'distance'] = distance
     return points_within_hull
 
+
 def merge_update(building, building_part):
     """
     Merge updated building data back into the main building GeoDataFrame.
@@ -188,6 +227,7 @@ def merge_update(building, building_part):
     Returns:
         GeoDataFrame: Merged GeoDataFrame with updated LV grid and osmid assignments.
     """
+
     cols_to_merge = ['EGID', 'LV_grid', 'LV_osmid', 'distance']
     building = pd.merge(building, building_part[cols_to_merge], how='left', on='EGID', suffixes=('', '_updated'))
     building['LV_grid'] = building.apply(
@@ -212,6 +252,7 @@ def process_municipality(key):
     Returns:
         GeoDataFrame: Processed GeoDataFrame with building assignments for the municipality.
     """
+
     try:
         # Load building data for the municipality
         buildings = pd.read_csv(os.path.join(data_path, f'{key}_buildings.csv'))
@@ -255,6 +296,7 @@ def process_municipality(key):
         buildings = merge_update(buildings, building_partly)
 
     return buildings
+
 
 if __name__ == '__main__':
     if rank == 0:

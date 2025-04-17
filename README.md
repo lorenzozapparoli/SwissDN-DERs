@@ -1,10 +1,11 @@
-# Distributed Energy Resources for Swiss Distribution Grids
+# Future Deployment and Flexibility of Distributed Energy Resources in the Distribution Grids of Switzerland
 
-This repository contains the codebase used to generate the dataset described in [citation], [citation], which provides detailed Distributed Energy Resource (DER) allocations and load profiles across Swiss medium- and low-voltage distribution grids. The scripts and folder structure included here allow users to replicate the creation of DER profiles and their spatial and temporal integration into Switzerland’s distribution networks.
+This repository contains the codebase used to generate the dataset "Future Deployment and Flexibility of Distributed Energy
+Resources in the Distribution Grids of Switzerland", available at https://doi.org/10.5281/zenodo.15056134. It provides detailed Distributed Energy Resource (DER) allocations and load profiles across Swiss medium- and low-voltage distribution grids. The scripts and folder structure included here allow users to replicate the creation of DER profiles and their spatial and temporal integration into Switzerland’s distribution networks.
 
-Important: This repository does not include the input datasets, intermediate processing results, or output data files. These can be obtained as outlined in the corresponding article. Scripts provided here enable users to process the input data and reproduce the final outputs.
+Important: This repository does not include the input datasets, intermediate processing results, or output data files. The input data are publicly available, and can be gathered as described in dedicated files in this repository. Intermediate results and outputs can be obtained by running the codes in this repository. Scripts provided here enable users to process the input data and reproduce the final outputs.
 
-## 🧠 Methodology Overview
+## 💡Methodology Overview
 The generation of the high-resolution DER dataset follows a two-step process:
 
 - Data Retrieval and Processing:
@@ -14,37 +15,39 @@ Input data for DER technologies (PVs, BESSs, EVs, HPs) and non-controllable load
 The processed data is geographically and electrically mapped to detailed distribution grid models of Switzerland, including 879 medium-voltage (MV) and 34,920 low-voltage (LV) grids.
 
 ## ⚙️ How to Run the Code
--  **Download the Repository**: Clone the repository to your local machine:
-    ```bash
-    git clone <repository_url>
-    cd <repository_directory>
-    ```
+- **Download the Repository**: Clone the repository to your local machine:
 - **Gather Input Files**: Collect the required input files from the sources described in the related paper. Place these files in the appropriate directories as specified in the folder structure and in the scripts. In case of doubt contact the authors of the paper.
 - **Install Dependencies**: Make sure you have **Python 3.11** or later installed. Then, install the required Python packages:
     ```bash
     # Create a new conda environment
     conda env create -f environment.yml
-    # Activate the environment
-    conda activate <environment_name>
     ```
-- **Run the Scripts**: Navigate to the relevant folder and execute the scripts as described in the how_to_run.txt files or the folder-specific instructions below.
+- **Run the Scripts**: Navigate to the relevant folder and execute the scripts as described in the how_to_run.txt files or the folder-specific instructions below. Please run the scripts in the following folder order: PV -> BESS -> HP -> EV -> LV_basicload -> MV_basicload. Data_checker.py and the scripts in the folders SwissDN_DERs and Plotting_data can be run afterwards.
 
 ## 📜 Description of Key Files and Folders
-### PV
+### 🔌 Grids
+This folder contains the grid data used in the project. It includes the following subfolders:
+- `how_to_populate.txt`: This file contains instructions on how to populate the grid data.
+- `LV/`: This folder contains the low-voltage grid data.
+- `MV/`: This folder contains the medium-voltage grid data.
+- `Additional_files`: This folder contains additional files related to the grid data, including the Voronoi partitioning of MV grids and the municipality boundaries.
+
+Please populate the grid data using the instructions in the `how_to_populate.txt` file before doing anything else. The grid data is used in the allocation scripts in the other folders.
+### ☀️ PV
 This folder contains scripts and data related to photovoltaic (PV) allocation.
 - `how_to_run.txt`: This file contains instructions on how to run the PV allocation scripts.
 - `PV_split.py`: This script splits PV data in municipalities for allocation. It processes the input data and prepares it for allocation to the grids.
 - `PV_allocation_LV.py`: This script allocates PVs to the LV grids.
 - `PV_allocation_MV.py`: This script allocates PVs to the MV grids.
 - `Final_results_generator.py`: This script generates the final results for PV allocation, generating the 2030, 2040, 2050 projections.
-- `data_processing/`: This folder contains auxiliary data for processing PV data. Refer to the scripts for details on the required input files, and their format.
-- `PV_input/`: This folder contains the input data for PV allocation. Refer to the scripts for details on the required input files, and their format.
-- `PV_output/`: This folder contains the output data generated by the PV allocator. Refer to the scripts for details on the output files, and their format.
-### BESS
+- `PV_input/`: This folder contains the input data for PV allocation. Refer to the scripts and the `how_to_run.txt` for details on the required input files, and their format.
+- `PV_output/`: This folder contains the output data generated by the PV allocator. Refer to the scripts and the `how_to_run.txt` for details on the output files, and their format.
+### 🔋 BESS
 This folder contains scripts related to Battery Energy Storage Systems allocation.
+- `how_to_run.txt`: This file contains instructions on how to run the BESS allocation scripts.
 - `BESS_allocator.py`: This script allocates BESSs to the MV grids based on the input data gatered form the `PV` folder. To run this script, be sure to have run the PV allocation scripts first.
 - `Output/`: This folder contains the output data generated by the BESS allocator. It will be populated running the script `BESS_allocator.py`.
-### HP
+### 🔥 HP
 This folder contains scripts and data related to Heat Pump allocation.
 - `how_to_run.txt`: This file contains instructions on how to run the heat pump allocation scripts.
 - `raw_data_processor_parallelized.py`: This script processes buildings data for heat pump allocation in a parallelized fashion to reduce computational time.
@@ -52,38 +55,37 @@ This folder contains scripts and data related to Heat Pump allocation.
 - `HP_allocation_LV.py`: This script allocates heat pumps to the LV grids. Be sure to run the script `HP_building_split.py` before running this script.
 - `HP_allocation_MV.py`: This script allocates heat pumps to the MV grids. Be sure to run the script `HP_allocation_LV.py` before running this script.
 - `Final_results_generator.py`: This script generates the final results for heat pump allocation, generating the 2030, 2040, 2050 projections. Be sure to run the script `HP_allocation_MV.py` before running this script.
-- `HP_input/`: This folder contains the input data for heat pump allocation. Refer to the scripts for details on the required input files, and their format.
-- `HP_output/`: This folder contains the output data generated by the heat pump allocator. Refer to the scripts for details on the output files, and their format.
-### EV (Alfredo compile this)
-This folder contains scripts and data related to Electric Vehicle allocation.
-- `EV_percentage_calculation.py`: This script calculates the percentage of EVs in the MV grids.
-- `EV_tasks.ipynb`: This Jupyter notebook contains tasks related to EV allocation and analysis.
-- `EV_voronoi_data.ipynb`: This Jupyter notebook contains Voronoi partitioning data for EV allocation.
-- `EV_Voronoi_partitioning_CH_MV.py`: This script performs Voronoi partitioning for EV allocation in Switzerland's MV grids.
-- `municipality_boundary.geojson`: This file contains the boundaries of Swiss municipalities.
-- `MV_trafos_voronoi_new.geojson`: This file contains the Voronoi partitioning data for MV transformers.
-- `MV_trafo_partitioning.geojson`: This file contains the partitioning data for MV transformers.
-### LV_basicload
+- `HP_input/`: This folder contains the input data for heat pump allocation. Refer to the scripts and the `how_to_run.txt` for details on the required input files, and their format.
+- `HP_output/`: This folder contains the output data generated by the heat pump allocator. Refer to the scripts and the `how_to_run.txt` for details on the output files, and their format.
+### 🚘 EV
+This folder contains scripts and data related to Electric Vehicles allocation.
+- `how_to_run.txt`: This file contains instructions on how to run the electric vehicles allocation scripts.
+- `EV_allocator.py`: This script calculates the percentage of EVs in the LV grids.
+- `EV_input/`: This folder contains the input data for electric vehicles allocation. Refer to the scripts and the `how_to_run.txt` for details on the required input files, and their format.
+- `EV_output/`: This folder contains the output data generated by the electric vehicles allocator. Refer to the scripts and the `how_to_run.txt` for details on the output files, and their format.
+### 🏡 LV_basicload
 This folder contains scripts and data related to low-voltage load profile definition.
-- `LV_basicload_allocation.py`: This script allocates basic load profiles to the LV grids. This adds a new field to the grids in the folder LV/, stating the commercial and residential share of the load for each LV node.
+- `how_to_run.txt`: This file contains instructions on how to run the low-voltage basic load allocation scripts.
+- `Municpality_profile_generator.py`: This script generates the municipality load profiles from the data in the municipality_profiles folder.
+- `LV_basicload_allocation.py`: This script allocates basic load profiles to the LV grids. This adds a new field to the grids in the folder Grids/LV/, stating the commercial and residential share of the load for each LV node.
 - `Result_condenser.py`: This script reads the output data from the LV basic load allocation and condenses it into a single file. This file contains the final results for the LV basic load allocation.
-- `LV_basicload_input/`: This folder contains the input data for LV basic load allocation. Refer to the scripts for details on the required input files, and their format.
-- `LV/`: This folder contains the output data generated by the LV basic load allocator. Refer to the scripts for details on the output files, and their format.
+- `LV_basicload_input/`: This folder contains the input data for LV basic load allocation. Refer to the scripts and the `how_to_run.txt` for details on the required input files, and their format.
+- `municipality_profiles/`: This folder contains the output data generated by the Municpality_profile_generator.py script.
 - `LV_basicload_output/`: This folder contains the output data. Refer to the scripts for details on the output files, and their format.
-### MV_basicload
+### 🏭 MV_basicload
 This folder contains scripts and data related to medium-voltage load profile definition.
+- `how_to_run.txt`: This file contains instructions on how to run the medium-voltage basic load allocation scripts.
 - `MV_profile_generator.py`: This script generates the MV load profiles from the data in the MV_basicload_input folder.
 - `MV_basicload_input/`: This folder contains the input data for MV basic load generation. Refer to the scripts for details on the required input files, and their format.
 - `MV_basicload_output/`: This folder contains the output data generated by the MV basic load generator. Refer to the scripts for details on the output files, and their format.
-### Plotting_data
+### 📈 Plotting_data
 This folder contains scripts and data related to plotting and visualization.
 - `Grid_plotter.py`: This script generates plots for the grid data.
 - `Plotter.py`: This script generates various plots for the project.
-- nine_zones.geojson: This file contains the boundaries of nine zones in Switzerland.
-- `validity_data_consistency.jpynb`: This Jupyter notebook checks the validity and consistency of the data, performing the sanity checks presented in the paper.
+-  `nine_zones.geojson`: This file contains the boundaries of municipalities in Switzerland.
 - `Other folders`: These folders contain data and figures related to grid data, figures, deployment histograms, Switzerland maps, hourly DER profiles, monthly DER heatmaps, and paper figures.
-### SwissDN_DERs
-This is the output folder of the project. It contains the data used to generate the final results for the project. The data is organized into several subfolders:
+### 📁 SwissDN_DERs
+This is the output folder of the project. It contains the data used to generate the final results for the project. This is the folder in the Zenodo repository (https://doi.org/10.5281/zenodo.15056134), with the addition of a data checking script. The data is organized into several subfolders:
 - `01_PV/`: This folder contains data related to PV allocation.
 - `02_BESS/`: This folder contains data related to BESS allocation.
 - `03_HP/`: This folder contains data related to heat pump allocation.
@@ -92,9 +94,10 @@ This is the output folder of the project. It contains the data used to generate 
 - `06_Grids/`: This folder contains data related to the distribution grids.
 - `07_Complementary_data/`: This folder contains complementary data for the project.
 - `08_Data_loader.py`: This script provides a data loader for the project. It loads the data from the subfolders and prepares it for analysis.
-### Data_checker.py
+- `validity_data_consistency.py`: This script checks the validity and consistency of the data, performing the sanity checks presented in the paper.
+### ☑️ Data_checker.py
 - This script checks the all the data for consistency and correctness beyond the basic checks performed in the Jupyter notebook `validity_data_consistency.ipynb`, and presented in the paper. It also reads all the DER data form the single folders, harmonizes the format, and generates the directory `SwissDN_DERs`.
-### environment.yml
+### ⚙️ environment.yml
 - This file contains the environment configuration for the project, including required packages and dependencies.
 
 ## 📄 License and Citation
@@ -111,75 +114,77 @@ In case of doubt, please contact the authors of the paper:
 ## 🗂️ Directory Structure
 The directory structure is organized as follows:
 ```plaintext
-📁 BESS/
- ├── BESS_allocator.py
- └── Output/
+📁 Grids/
+    ├── how_to_populate.txt
+    ├── LV/
+    ├── MV/
+    └── Additional_files/
+    
+📁 PV/
+    ├── Final_results_generator.py
+    ├── PV_allocation_LV.py
+    ├── PV_allocation_MV.py
+    ├── PV_input/
+    ├── PV_output/
+    ├── PV_split.py
+    └── how_to_run.txt
 
-📁 EV/
- ├── EV_percentage_calculation.py
- ├── EV_tasks.ipynb
- ├── EV_voronoi_data.ipynb
- ├── EV_Voronoi_partitioning_CH_MV.py
- ├── municipality_boundary.geojson
- ├── MV_trafos_voronoi_new.geojson
- └── MV_trafo_partitioning.geojson
+📁 BESS/
+    ├── BESS_allocator.py
+    ├── how_to_run.txt
+    └── Output/
 
 📁 HP/
- ├── Final_results_generator.py
- ├── HP_allocation_LV.py
- ├── HP_allocation_MV.py
- ├── HP_building_split.py
- ├── raw_data_processor_parallelized.py
- ├── how_to_run.txt
- ├── HP_input/
- └── HP_output/
+    ├── HP_allocation_LV.py
+    ├── HP_allocation_MV.py
+    ├── HP_building_split.py
+    ├── raw_data_processor_parallelized.py
+    ├── Final_results_generator.py
+    ├── HP_input/
+    ├── HP_output/
+    └── how_to_run.txt
+
+📁 EV/
+    ├── EV_allocator.py
+    ├── EV_input/
+    ├── EV_output/
+    └── how_to_run.txt
 
 📁 LV_basicload/
- ├── LV_basicload_allocation.py
- ├── Result_condenser.py
- ├── LV_basicload_input/
- ├── LV_basicload_output/
- └── LV/
+    ├── LV_basicload_allocation.py
+    ├── Municpality_profile_generator.py
+    ├── Result_condenser.py
+    ├── LV_basicload_input/
+    ├── municipality_profiles/
+    └── LV_basicload_output/
 
 📁 MV_basicload/
- ├── MV_profile_generator.py
- ├── MV_basicload_input/
- └── MV_basicload_output/
-
-📁 PV/
- ├── Final_results_generator.py
- ├── PV_allocation_LV.py
- ├── PV_allocation_MV.py
- ├── PV_split.py
- ├── how_to_run.txt
- ├── data_processing/
- ├── PV_input/
- └── PV_output/
+    ├── MV_basicload_input/
+    ├── MV_basicload_output/
+    └── MV_profile_generator.py
 
 📁 SwissDN_DERs/
- ├── 01_PV/
- ├── 02_BESS/
- ├── 03_HP/
- ├── 04_EV/
- ├── 05_Demand/
- ├── 06_Grids/
- ├── 07_Complementary_data/
- └── 08_Data_loader.py
+    ├── 01_PV/
+    ├── 02_BESS/
+    ├── 03_HP/
+    ├── 04_EV/
+    ├── 05_Demand/
+    ├── 06_Grids/
+    ├── 07_Complementary_data/
+    ├── 08_Data_loader.py
+    └── validity_data_consistency.py
 
 📁 Plotting_data/
- ├── Grid_data/
- ├── Grid_figures/
- ├── Grid_plotter.py
- ├── Deployment_histograms/
- ├── Switzerland_maps/
- ├── Hourly_DERs_profiles/
- ├── Monthly_DERs_heatmap/
- ├── Profiles_figure/
- ├── Paper_figures/
- ├── Plotter.py
- ├── nine_zones.geojson
+    ├── grid_plotter.py
+    ├── Plotter.py
+    ├── nine_zones.geojson
+    ├── figures/
+    ├── grid_data/
+    ├── histograms/
+    ├── maps/
+    ├── monthly_heatmaps/
+    └── paper_figures/
 
 📄 environment.yml
 📄 Data_checker.py
-📄 .gitignore
 ```
