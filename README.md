@@ -96,7 +96,7 @@ This is the output folder of the project. It contains the data used to generate 
 - `08_Data_loader.py`: This script provides a data loader for the project. It loads the data from the subfolders and prepares it for analysis.
 - `validity_data_consistency.py`: This script checks the validity and consistency of the data, performing the sanity checks presented in the paper.
 ### ☑️ Data_checker.py
-- This script checks the all the data for consistency and correctness beyond the basic checks performed in the Jupyter notebook `validity_data_consistency.ipynb`, and presented in the paper. It also reads all the DER data form the single folders, harmonizes the format, and generates the directory `SwissDN_DERs`.
+- This script checks the all the data for consistency and correctness beyond the basic checks performed in the script `validity_data_consistency.py`, and presented in the paper. It also reads all the DER data form the single folders, harmonizes the format, and generates the directory `SwissDN_DERs`.
 ### ⚙️ environment.yml
 - This file contains the environment configuration for the project, including required packages and dependencies.
 
@@ -105,10 +105,6 @@ This work is released for academic use. This work is licensed under a CC BY 4.0 
 - **DERs**: [to be published]
 - **Grids**: Alfredo Oneto, Blazhe Gjorgiev, Filippo Tettamanti, Giovanni Sansavini, Large-scale generation of geo-referenced power distribution grids from open data with load clustering,
 Sustainable Energy, Grids and Networks, Volume 42, 2025, 101678, ISSN 2352-4677, https://doi.org/10.1016/j.segan.2025.101678.
-
-In case of doubt, please contact the authors of the paper:
-- **Lorenzo Zapparoli**: lzapparoli@ethz.ch
-- **Alfredo Oneto**: aoneto@ethz.ch
 
 
 ## 🗂️ Directory Structure
