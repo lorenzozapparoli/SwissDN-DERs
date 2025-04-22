@@ -24,11 +24,7 @@ class GridLoader:
         self.end_date = datetime.strptime(_end_date, '%m-%d %H:%M:%S')
         self.data_year = _data_year
         self.script_path = os.getcwd()
-        self.edges_file = None
-        self.nodes_file = None
         self.load_profiles = None
-        self.mv_load_profiles = None
-        self.lv_load_profiles = None
         self.bess_allocation = None
         self.ev_energy_profiles = None
         self.ev_flexible_energy_profiles = None
@@ -349,10 +345,10 @@ class GridLoader:
                 filtered_shares_df = basicload_shares_df[basicload_shares_df['LV_grid'] == self.grid_name]
                 if filtered_shares_df.empty:
                     print(f"No basic load shares found for grid {self.grid_name}.")
-                    self.lv_load_profiles = None
+                    self.load_profiles = None
                     return
             else:
-                self.lv_load_profiles = None
+                self.load_profiles = None
                 return
 
             # Extract BFS municipality code
@@ -368,10 +364,10 @@ class GridLoader:
                     residential_profiles_df['BFS_municipality_code'] == int(bfs_code)]
                 if commercial_profile.empty or residential_profile.empty:
                     print(f"No profiles found for BFS municipality code {bfs_code}.")
-                    self.lv_load_profiles = None
+                    self.load_profiles = None
                     return
             else:
-                self.lv_load_profiles = None
+                self.load_profiles = None
                 return
 
             # Create the new DataFrame with weighted average profiles
@@ -398,7 +394,7 @@ class GridLoader:
             file_path = os.path.join(base_path, 'MV_load_profile.csv')
             if not os.path.exists(file_path):
                 print(f"File MV_load_profile.csv not found in {base_path}.")
-                self.mv_load_profiles = None
+                self.load_profiles = None
                 return
 
             # Load the MV load profile
