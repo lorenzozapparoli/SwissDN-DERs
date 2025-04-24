@@ -1391,7 +1391,12 @@ class DataChecker:
                 df = df.transpose()
                 df.columns = df.iloc[0]
                 df = df[1:]
-                df.columns = pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S')
+                # Remove leap year
+                if year == 2040:
+                    timestamp_year = 2039
+                else:
+                    timestamp_year = year
+                df.columns = pd.date_range(start=f'{timestamp_year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S')
                 df.rename_axis('Temperature_profile_name', inplace=True)
                 df.to_csv(os.path.join(output_path, file), index=True)
 
@@ -1438,6 +1443,12 @@ class DataChecker:
         files = ['EV_allocation_LV.csv', 'EV_flexible_energy_profiles_LV.csv',
                  'EV_power_profiles_LV.csv']
 
+        # Remove leap year
+        if year == 2040:
+            timestamp_year = 2039
+        else:
+            timestamp_year = year
+
         for file in files:
             df = pd.read_csv(os.path.join(base_path, file))
             if 'EV_allocation_LV' in file:
@@ -1449,9 +1460,9 @@ class DataChecker:
                 df.rename(columns={'BFS': 'BFS_municipality_code', 'Type': 'Profile_type'}, inplace=True)
 
             if 'EV_flexible_energy_profiles_LV' in file:
-                df.columns = [df.columns[0]] + pd.date_range(start=f'{year}-01-01', periods=365, freq='d').strftime('%m-%d').tolist()
+                df.columns = [df.columns[0]] + pd.date_range(start=f'{timestamp_year}-01-01', periods=365, freq='d').strftime('%m-%d').tolist()
             elif 'EV_power_profiles_LV' in file:
-                df.columns = [df.columns[0], df.columns[1]] + pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
+                df.columns = [df.columns[0], df.columns[1]] + pd.date_range(start=f'{timestamp_year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
 
             if 'LV_osmid' in df.columns:
                 df['LV_osmid'] = df['LV_osmid'].astype(int)
@@ -1484,6 +1495,12 @@ class DataChecker:
 
         files = ['LV_basicload_shares.csv', 'Commercial_profiles.csv', 'Residential_profiles.csv']
 
+        # Remove leap year
+        if year == 2040:
+            timestamp_year = 2039
+        else:
+            timestamp_year = year
+
         for file in files:
             df = pd.read_csv(os.path.join(base_path, file))
             if 'LV_basicload_shares' in file:
@@ -1497,7 +1514,7 @@ class DataChecker:
                 df.to_csv(os.path.join(output_path, file), index=False)
             else:
                 df = df.transpose()
-                df.columns = pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
+                df.columns = pd.date_range(start=f'{timestamp_year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S').tolist()
                 df.rename_axis('BFS_municipality_code', inplace=True)
                 df = df[df.index.astype(int).isin(swiss_municipality_numbers)]  # Filter rows
                 if 'LV_osmid' in df.columns:
@@ -1523,12 +1540,17 @@ class DataChecker:
         file = 'MV_load_profile.csv'
         df = pd.read_csv(os.path.join(base_path, file))
 
+        # Remove leap year
+        if year == 2040:
+            timestamp_year = 2039
+        else:
+            timestamp_year = year
+
         # Remove the Power_pu header
         df.columns = df.iloc[0]
-        # df = df[1:]
 
         # Set the index row to dates from 1 to 8760 in "month-day hour" format
-        df.index = pd.date_range(start=f'{year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S')
+        df.index = pd.date_range(start=f'{timestamp_year}-01-01', periods=8760, freq='h').strftime('%m-%d %H:%M:%S')
 
         # Transpose the DataFrame
         df = df.transpose()
