@@ -65,11 +65,11 @@ def allocate_batteries(year, pv_share_dict, previous_year_data=None, duration_ho
         lv_previous = previous_year_data['LV']
         mv_previous = previous_year_data['MV']
 
-        # Ensure all previous nodes are included
-        lv_sampled = lv_previous.copy()
-        mv_sampled = mv_previous.copy()
-
         # Add new nodes to meet the new share
+        lv_sampled = lv_data[lv_data[['LV_grid', 'LV_osmid']].apply(tuple, axis=1).isin(
+            lv_previous[['LV_grid', 'LV_osmid']].apply(tuple, axis=1))].copy()
+        mv_sampled = mv_data[mv_data[['MV_grid', 'MV_osmid']].apply(tuple, axis=1).isin(
+            mv_previous[['MV_grid', 'MV_osmid']].apply(tuple, axis=1))].copy()
         lv_remaining = lv_data[~lv_data[['LV_grid', 'LV_osmid']].apply(tuple, axis=1).isin(
             lv_previous[['LV_grid', 'LV_osmid']].apply(tuple, axis=1))]
         mv_remaining = mv_data[~mv_data[['MV_grid', 'MV_osmid']].apply(tuple, axis=1).isin(

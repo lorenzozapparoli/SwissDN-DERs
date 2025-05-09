@@ -30,7 +30,7 @@ class GridLoader:
         self.start_date = datetime.strptime(_start_date, '%m-%d %H:%M:%S')
         self.end_date = datetime.strptime(_end_date, '%m-%d %H:%M:%S')
         self.data_year = _data_year
-        self.script_path = os.path.join(os.path.dirname(os.getcwd()), 'SwissPDG_DERs')
+        self.script_path = os.path.join(os.path.dirname(os.getcwd()), 'SwissDN_DERs')
         self.edges_file = None
         self.nodes_file = None
         self.load_profiles = None
@@ -660,7 +660,7 @@ if __name__ == "__main__":
     grid_name = '6602-2_0_5'
     start_date = '01-01 00:00:00'
     end_date = '12-31 23:00:00'
-    data_year = 2050
+    data_year = 2030
 
     loader = GridLoader(grid_type, grid_name, start_date, end_date, data_year)
     loader.load_grid()

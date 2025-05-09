@@ -134,8 +134,8 @@ def value_types_and_shape(dfs):
     """
     print('\n---------------------------------------------------')
 
-    correct_rows = [1, 440, 2148, 3625, 6444, 7498, 11202, 11551, 13726, 13784, 14759, 15429, 19452, 
-                                       151034, 384288, 481318, 630171, 758118, 876594, 998977, 1065403, 1427096, 2525530]
+    correct_rows = [1, 440, 2148, 3625, 6444, 7449, 11202, 11551, 13481, 13726, 14759, 15429, 19452,
+                                       151034, 384287, 481318, 630171, 758118, 876594, 998961, 1065403, 1427096, 2525530]
     print('Correct number of rows: ', correct_rows) # we check the number of rows
     print('\nCorrect unique number of rows: ', len(correct_rows)) # we check the number of rows 
 

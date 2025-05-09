@@ -175,13 +175,13 @@ class Plotter:
         # Load data from CSV files
         # Load data from CSV files
         pv_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_pv_production_{self.year}.csv',
-                                 header=None).values.flatten() / 1000  # Convert W to kW
+                                 skiprows=1, header=None).values.flatten()  # Convert W to kW
         hp_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_hp_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         ev_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_ev_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         load_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_non_dispatchable_load_{self.year}.csv',
-                                   header=None).values.flatten()
+                                   skiprows=1, header=None).values.flatten()
 
         fig, ax = plt.subplots(figsize=self.figsize)
         ax.step(hours, pv_profile[start_hour:end_hour], label='PV Generation', color=self.color_palette[0], where='mid',
@@ -208,13 +208,13 @@ class Plotter:
     def plot_monthly_profiles_single_grid(self):
         # Load data from CSV files
         pv_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_pv_production_{self.year}.csv',
-                                 header=None).values.flatten() / 1000  # Convert W to kW
+                                 skiprows=1, header=None).values.flatten()  # Convert W to kW
         hp_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_hp_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         ev_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_ev_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         load_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_non_dispatchable_load_{self.year}.csv',
-                                   header=None).values.flatten()
+                                   skiprows=1, header=None).values.flatten()
 
         # Compute monthly profiles
         pv_monthly = [sum(pv_profile[i:i + 730]) / 1000 for i in range(0, 8760, 730)]  # Convert kW to MWh
@@ -244,13 +244,13 @@ class Plotter:
     def plot_daily_boxplot_single_grid(self):
         # Load data from CSV files
         pv_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_pv_production_{self.year}.csv',
-                                 header=None).values.flatten() / 1000  # Convert W to kW
+                                 skiprows=1, header=None).values.flatten()  # Convert W to kW
         hp_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_hp_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         ev_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_ev_consumption_{self.year}.csv',
-                                 header=None).values.flatten()
+                                 skiprows=1, header=None).values.flatten()
         load_profile = pd.read_csv(f'Hourly_DERs_profiles/grid_non_dispatchable_load_{self.year}.csv',
-                                   header=None).values.flatten()
+                                   skiprows=1, header=None).values.flatten()
 
         # Compute daily profiles
         daily_data = {
@@ -376,13 +376,14 @@ class Plotter:
         # self.plot_hourly_profiles_switzerland(day=70)  # Example: 1st of May is the 121st day of the year
         # self.plot_monthly_profiles_switzerland()
         # self.plot_daily_boxplot_switzerland()
-        # self.plot_hourly_profiles_single_grid(day=70)  # Example: 1st of May is the 121st day of the year
-        # self.plot_monthly_profiles_single_grid()
-        # self.plot_daily_boxplot_single_grid()
-        self.plot_boxplots()
+        self.plot_hourly_profiles_single_grid(day=70)  # Example: 1st of May is the 121st day of the year
+        self.plot_monthly_profiles_single_grid()
+        self.plot_daily_boxplot_single_grid()
+        # self.plot_boxplots()
+
 
 # Generate plots for 2030, 2040, and 2050
-for year in [2050]:
+for year in [2030, 2040, 2050]:
     plotter = Plotter(year, font_path='C:/Windows/Fonts')  # Update the path to the CMU Bright font
     # plotter.plot_daily_boxplot_single_grid()
     plotter.generate_plots()
