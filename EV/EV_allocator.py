@@ -77,9 +77,9 @@ def generate_profiles(mapped_CP, mapped_FE, mapped_PD, mapped_PU, penetration, s
 
     # The profiles are shifted to start on a Monday at 00:00
     # The first 48 values of the last week of the year are added to the dataframe
-    Power_two_days_last_week = Power_mapped[list(range(8760 - 168, 8760 - 168 + 48))].copy()
+    Power_two_days_last_week = Power_mapped[list(range(8760 - 167, 8760 - 167 + 48))].copy()
     # We rename the columns to [8761, 8762, ..., 8812] and add them to the dataframe
-    Power_two_days_last_week.rename(columns={i: i + 169 for i in range(8760 - 168, 8760 - 168 + 48)}, inplace=True)
+    Power_two_days_last_week.rename(columns={i: i + 168 for i in range(8760 - 167, 8760 - 167 + 48)}, inplace=True)
     # Power_two_days_last_week is added to Power_mapped
     Power_mapped = pd.concat([Power_mapped, Power_two_days_last_week], axis=1)
     # The columns [1, 2, ..., 48] are dropped from the dataframe
@@ -88,9 +88,9 @@ def generate_profiles(mapped_CP, mapped_FE, mapped_PD, mapped_PU, penetration, s
     Power_mapped.rename(columns={i: i - 48 for i in range(49, 8761 + 48)}, inplace=True)
     # The flexible energy profiles are shifted to start on a Monday at 00:00
     # The first two days of the last week of the year are added to the dataframe
-    Fe_two_days_last_week = mapped_FE[list(range(365 - 7, 365 - 7 + 2))].copy()
+    Fe_two_days_last_week = mapped_FE[list(range(365 - 6, 365 - 6 + 2))].copy()
     # We rename the columns to [366, 367] and add them to the dataframe
-    Fe_two_days_last_week.rename(columns={i: i + 8 for i in range(365 - 7, 365 - 7 + 2)}, inplace=True)
+    Fe_two_days_last_week.rename(columns={i: i + 7 for i in range(365 - 6, 365 - 6 + 2)}, inplace=True)
     # Fe_two_days_last_week is added to mapped_FE
     mapped_FE = pd.concat([mapped_FE, Fe_two_days_last_week], axis=1)
     # The columns [1,2] are dropped from the dataframe
