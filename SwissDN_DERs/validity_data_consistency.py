@@ -112,7 +112,7 @@ def value_types_and_shape(dfs):
     """
     print('\n---------------------------------------------------')
 
-    correct_columns = [3, 4, 6, 7, 290, 366, 8760, 8761, 8762]
+    correct_columns = [3, 4, 6, 10, 290, 366, 8760, 8761, 8762]
 
     print('Correct number of columns: ', correct_columns) # we check the number of columns
     print('\nCorrect unique number of columns: ', len(correct_columns)) # we check the number of columns
