@@ -30,9 +30,9 @@ warnings.filterwarnings("ignore")
 script_path = os.path.dirname(os.path.abspath(__file__))
 buildings_info = pd.read_csv(os.path.join(script_path, 'HP_input', 'Buildings_data', 'Buildings data Switzerland', 'gebaeude_batiment_edificio.csv'),
                              sep="\t", low_memory=False)
-parameters_dict = {2030: {'HP_share_commercial': 0.1394, 'HP_share_residential': 0.360, 'COP': 3.49, 'Building_efficiency_factor': 0.904066},
-                   2040: {'HP_share_commercial': 0.2129, 'HP_share_residential': 0.520, 'COP': 3.79, 'Building_efficiency_factor': 0.784556},
-                   2050: {'HP_share_commercial': 0.2830, 'HP_share_residential': 0.650, 'COP': 4.12, 'Building_efficiency_factor': 0.704088}}
+parameters_dict = {2030: {'HP_share_commercial': 0.1394, 'HP_share_residential': 0.360, 'COP': 3.49, 'COP_0': 5.60, 'COP_1': -0.09,  'COP_2': 0.0005, 'Building_efficiency_factor': 0.904066},
+                   2040: {'HP_share_commercial': 0.2129, 'HP_share_residential': 0.520, 'COP': 3.79, 'COP_0': 6.08, 'COP_1': -0.0977,  'COP_2': 0.000543, 'Building_efficiency_factor': 0.784556},
+                   2050: {'HP_share_commercial': 0.2830, 'HP_share_residential': 0.650, 'COP': 4.12, 'COP_0': 6.61, 'COP_1': -0.106,  'COP_2': 0.000590, 'Building_efficiency_factor': 0.704088}}
 
 
 def process_lv_allocation(previous_year_data=None, simulation_year=2030):
@@ -50,6 +50,11 @@ def process_lv_allocation(previous_year_data=None, simulation_year=2030):
     prt_threshold = builidngs_df['PRT'].quantile(0.95)
     df_filtered = df[df['PRT'] <= prt_threshold]
     df_filtered['COP'] = HP_COP
+
+    # Add variable COP parameters
+    df_filtered['COP_0'] = parameters_dict[simulation_year]['COP_0']
+    df_filtered['COP_1'] = parameters_dict[simulation_year]['COP_1']
+    df_filtered['COP_2'] = parameters_dict[simulation_year]['COP_2']
 
     # Drop entries with LV_grid or LV_osmid equal to -1
     df_filtered = df_filtered[(df_filtered['LV_grid'] != '-1') & (df_filtered['LV_osmid'] != -1)]
@@ -105,7 +110,7 @@ def process_lv_allocation(previous_year_data=None, simulation_year=2030):
     }, inplace=True)
 
     # Reorder columns to make LV_grid and LV_osmid the first two columns
-    columns_order = ['LV_grid', 'LV_osmid', 'CBLD_KWh/K', 'HBLD_kW/K', 'PRT_kW', 'COP', 'T_PROFILE']
+    columns_order = ['LV_grid', 'LV_osmid', 'CBLD_KWh/K', 'HBLD_kW/K', 'PRT_kW', 'COP', 'COP_0', 'COP_1', 'COP_2', 'T_PROFILE']
     df_filtered = df_filtered[columns_order]
 
     # Group by LV_grid and LV_osmid, summing the relevant columns and taking the most frequent T_PROFILE
@@ -114,6 +119,9 @@ def process_lv_allocation(previous_year_data=None, simulation_year=2030):
         'CBLD_KWh/K': 'sum',
         'HBLD_kW/K': 'sum',
         'COP': 'mean',
+        'COP_0': 'mean',
+        'COP_1': 'mean',
+        'COP_2': 'mean',
         'T_PROFILE': lambda x: x.mode()[0]
     }).reset_index()
 
@@ -150,6 +158,13 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
     residential_gklas = [11, 111, 1121, 1122, 1130, 1211, 1212, 1110]
     df_filtered['Building_Type'] = np.where(df_filtered['GKLAS'].isin(residential_gklas), 'Residential', 'Commercial')
 
+    # Add COP column
+    df_filtered['COP'] = HP_COP
+    # Add variable COP parameters
+    df_filtered['COP_0'] = parameters_dict[simulation_year]['COP_0']
+    df_filtered['COP_1'] = parameters_dict[simulation_year]['COP_1']
+    df_filtered['COP_2'] = parameters_dict[simulation_year]['COP_2']
+
     # Sample the commercial and residential buildings
     if previous_year_data is not None:
         LV_previous = previous_year_data
@@ -182,7 +197,6 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
 
     # df_filtered = pd.concat([sampled_commercial, sampled_residential])
     df_previous = df_filtered.copy()
-    df_filtered['COP'] = HP_COP
 
     # Drop unnecessary columns
     df_filtered = df_filtered.drop(columns=['EGID', 'GKODN', 'GKODE', 'GEBF', 'GAREA', 'ISHP', 'geometry', 'GKLAS', 'Building_Type'])
@@ -199,7 +213,7 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
     }, inplace=True)
 
     # Reorder columns to make MV_grid and MV_osmid the first two columns
-    columns_order = ['MV_grid', 'MV_osmid', 'CBLD_KWh/K', 'HBLD_kW/K', 'PRT_kW', 'COP', 'T_PROFILE']
+    columns_order = ['MV_grid', 'MV_osmid', 'CBLD_KWh/K', 'HBLD_kW/K', 'PRT_kW', 'COP', 'COP_0', 'COP_1', 'COP_2', 'T_PROFILE']
     df_filtered = df_filtered[columns_order]
 
     # Group by MV_grid and MV_osmid, summing the relevant columns and taking the most frequent T_PROFILE
@@ -208,6 +222,9 @@ def process_mv_allocation(previous_year_data=None, simulation_year=2030):
         'CBLD_KWh/K': 'sum',
         'HBLD_kW/K': 'sum',
         'COP': 'mean',
+        'COP_0': 'mean',
+        'COP_1': 'mean',
+        'COP_2': 'mean',
         'T_PROFILE': lambda x: x.mode()[0]
     }).reset_index()
 

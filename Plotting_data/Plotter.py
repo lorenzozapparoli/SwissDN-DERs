@@ -367,6 +367,94 @@ class Plotter:
                     bbox_inches='tight')
         plt.show()
 
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import os
+
+    def plot_hourly_profiles_from_excel(self, filepath):
+        # Load the Excel file
+        df = pd.read_excel(filepath, index_col=0)
+
+        # Define consistent color per DER
+        color_map = {
+            'PV_production': self.color_palette[0],  # blue
+            'HP_temperature': self.color_palette[2],  # green
+            'EV_consumption': self.color_palette[4],  # orange
+            'BESS_SOE': self.color_palette[7]  # red
+        }
+
+        y_limits = {
+            'PV_production': (0, 15),
+            'HP_temperature': (16, 24),
+            'EV_consumption': (0, 4),
+            'BESS_SOE': (0, 30)
+        }
+
+        y_ticks = {
+            'PV_production': [0, 5, 10, 15],
+            'HP_temperature': [16, 18, 20, 22, 24],
+            'EV_consumption': [0, 1, 2, 3, 4],
+            'BESS_SOE': [0, 10, 20, 30]
+        }
+
+        # Define resource metadata
+        resources = {
+            'PV_production': {
+                'ylabel': 'Power (kW)',
+                'title': 'PV Generation Profile',
+            },
+            'HP_temperature': {
+                'ylabel': 'Temperature (°C)',
+                'title': 'Heat Pump Temperature Profile',
+            },
+            'EV_consumption': {
+                'ylabel': 'Power (kW)',
+                'title': 'EV Consumption Profile',
+            },
+            'BESS_SOE': {
+                'ylabel': 'State of energy (kWh)',
+                'title': 'Battery Energy Storage SOE Profile',
+            }
+        }
+
+        # X-axis = 24 hours
+        hours = list(range(1, 25))
+
+        # Output folder
+        output_dir = os.path.join(os.getcwd(), 'Profiles_figure')
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Plot each resource
+        for key, meta in resources.items():
+            fig, ax = plt.subplots(figsize=self.figsize)
+
+            color = color_map[key]
+
+            # Plot min and max (dashed)
+            ax.step(hours, df.loc[f"{key}_max"], where='mid', label='Max',
+                    color=color, linewidth=2, linestyle='--')
+            ax.step(hours, df.loc[f"{key}_min"], where='mid', label='Min',
+                    color=color, linewidth=2, linestyle='--')
+
+            # Plot actual (solid)
+            ax.step(hours, df.loc[key], where='mid', label='Actual',
+                    color=color, linewidth=2)
+
+            # Formatting
+            ax.set_xlim(1, 24)
+            ax.set_xticks([1, 6, 12, 18, 24])
+            ax.set_xlabel('Hour')
+            ax.set_ylabel(meta['ylabel'])
+            ax.set_ylim(y_limits[key])
+            ax.set_yticks(y_ticks[key])
+            # ax.set_title(meta['title'])
+            # ax.legend(loc='upper center', ncol=3, frameon=False)
+
+            # Save
+            save_path = os.path.join(output_dir, f'{key}_profile.svg')
+            plt.savefig(save_path, format='svg', bbox_inches='tight')
+            plt.show()
+
     def generate_plots(self):
         # self.load_data()
         # self.load_hourly_data()
@@ -385,6 +473,7 @@ class Plotter:
 # Generate plots for 2030, 2040, and 2050
 for year in [2030, 2040, 2050]:
     plotter = Plotter(year, font_path='C:/Windows/Fonts')  # Update the path to the CMU Bright font
+    plotter.plot_hourly_profiles_from_excel(filepath='Hourly_DERs_profiles/Book1.xlsx')
     # plotter.plot_daily_boxplot_single_grid()
-    plotter.generate_plots()
+    # plotter.generate_plots()
 

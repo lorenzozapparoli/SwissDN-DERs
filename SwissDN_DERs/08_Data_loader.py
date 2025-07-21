@@ -434,9 +434,9 @@ class GridLoader:
 if __name__ == "__main__":
     # Example usage
     grid_type = 'LV'  # or 'MV'
-    grid_name = '6602-2_0_5'
-    start_date = '01-01 00:00:00'
-    end_date = '12-31 23:00:00'
+    grid_name = '6629-4_0_4'
+    start_date = '03-31 00:00:00'
+    end_date = '04-1 23:00:00'
     data_year = 2050
 
     loader = GridLoader(grid_type, grid_name, start_date, end_date, data_year)

@@ -57,7 +57,6 @@ class MV_allocation():
         self.grid_path = os.path.join(self.base_path, 'Grids', 'MV')
         self.MV_id = dict()
         self.id = str
-        self.save_path = os.path.join(self.script_path, 'PV_output', 'HP_allocation_MV')
     
     def load_building_data(self):
         """
