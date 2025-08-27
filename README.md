@@ -102,7 +102,7 @@ This is the output folder of the project. It contains the data used to generate 
 
 ## 📄 License and Citation
 This work is released for academic use. This work is licensed under a CC BY 4.0 license. If you use this code or dataset, please cite the associated article(s):
-- **DERs**: [to be published]
+- **DERs**: Zapparoli, L., Oneto, A., Parajeles Herrera, M. et al. Future Deployment and Flexibility of Distributed Energy Resources in the Distribution Grids of Switzerland. Sci Data 12, 1491 (2025). https://doi.org/10.1038/s41597-025-05830-y
 - **Grids**: Alfredo Oneto, Blazhe Gjorgiev, Filippo Tettamanti, Giovanni Sansavini, Large-scale generation of geo-referenced power distribution grids from open data with load clustering,
 Sustainable Energy, Grids and Networks, Volume 42, 2025, 101678, ISSN 2352-4677, https://doi.org/10.1016/j.segan.2025.101678.
 
